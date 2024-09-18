@@ -48,7 +48,7 @@ public class Organism {
 	**/
 	public void alterSize(double amount)
 	{
-		this.size -= amount;
+		this.size += amount;
 	}
 	
 	/**
