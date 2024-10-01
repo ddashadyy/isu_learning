@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <vector>
 
 class Organism;
 class Animal;
@@ -98,6 +99,7 @@ public:
 
 class Lion : public Animal, IPredator
 {
+public:
     Lion() = default;
     Lion( const std::string& name ) { speciesName = name; }
     ~Lion() = default;
@@ -130,7 +132,7 @@ public:
     void sing() const override { std::cout << "I am singing\n"; };
     void fly() const override { std::cout << "I am flying\n"; };
     void eat( Grass& g ) const override { std::cout << "I am " << getSpeciesName() << " eating Grass\n"; };
-    void sound() const override { std::cout << "I am HummingBird"; }
+    void sound() const override { std::cout << "I am HummingBird\n"; }
 };
 
 class Eagle : public Bird, IPredator
@@ -144,7 +146,7 @@ public:
     void sing() const override { std::cout << "I am singing\n"; };
     void fly() const override { std::cout << "I am flying\n"; };
     void eat( Animal& g ) const override { std::cout << "I am " << getSpeciesName() << " eating Aniaml\n"; };
-    void sound() const override { std::cout << "I am HummingBird"; }
+    void sound() const override { std::cout << "I am Eagle\n"; }
 };
 
 
@@ -152,7 +154,21 @@ public:
 
 int main()
 {
+    std::vector<std::shared_ptr<Animal>> animals = {
+        std::make_shared<Giraffe>("Giraffe"),
+        std::make_shared<Bear>("Bear"),
+        std::make_shared<Lion>("Giraffe"),
+        std::make_shared<HummingBird>("HummingBird"),
+        std::make_shared<Eagle>("Eagle")
+    };
+    
+    for (const auto& animal : animals)
+        animal->sound();
+
+    auto venusFlyTrap_ptr = std::make_unique<VenusFlyTrap>("VenusFlyTrap");
+    auto grass_ptr = std::make_unique<Grass>("Grass");
+
     
 
-    return;
+    return 0;
 }
