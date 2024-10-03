@@ -84,7 +84,7 @@ public:
     void eat( Grass& g ) const override { std::cout << "I am " << getSpeciesName() << " eating Grass\n"; }
 };
 
-class Bear : public Animal, IHerbivore
+class Bear : public Animal, IHerbivore, IPredator
 {
 public:
     Bear() = default;
@@ -94,7 +94,7 @@ public:
     std::string getSpeciesName() const override { return speciesName; }
     void sound() const override { std::cout << "I am Bear\n"; }
     void eat( Grass& g ) const override { std::cout << "I am " << getSpeciesName() << " eating Grass\n"; }
-
+    void eat( Animal& a ) const override { std::cout << "I am " << getSpeciesName() << " eating Animal\n"; }
 };
 
 class Lion : public Animal, IPredator
