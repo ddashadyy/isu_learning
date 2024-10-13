@@ -9,7 +9,7 @@
 class InvertedIndex
 {
 public:
-    InvertedIndex();
+    InvertedIndex() = default;
     ~InvertedIndex() = default;
 
     void indexDocument(const std::string& path);
@@ -21,8 +21,10 @@ private:
     std::list<int> getUnion(const std::list<int>& l1, const std::list<int>& l2);
 
     std::string normalize(const std::string& term);
-
+    std::string to_lower_case(std::string& word);
+    void addWordToIndex(const std::string& word, int docId);
 
     std::list<std::string> m_documents;
     std::unordered_map<std::string, std::list<int>> m_index;
+
 };
