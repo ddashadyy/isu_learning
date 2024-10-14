@@ -22,7 +22,7 @@ private:
 
     std::string normalize(const std::string& term);
     std::string to_lower_case(std::string& word);
-    void addWordToIndex(const std::string& word, int docId);
+    void add_word_too_index(const std::string& word, int docId);
 
     std::list<std::string> m_documents;
     std::unordered_map<std::string, std::list<int>> m_index;

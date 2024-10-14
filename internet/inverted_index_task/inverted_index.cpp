@@ -6,31 +6,29 @@
 #include <cctype>
 #include <algorithm>
 
-namespace fs = std::filesystem;
-
-
 void InvertedIndex::indexDocument(const std::string& path)
 {
     std::ifstream file(path);
     if (!file.is_open()) 
+    {
         std::cerr << "Could not open the file: " << path << std::endl;
         return;
+    }
     
-
-    std::string line;
+    std::string line{};
     m_documents.push_back(path); 
     int doc_id = m_documents.size(); 
 
     while (std::getline(file, line)) 
     {
         std::istringstream iss(line);
-        std::string word;
+        std::string word{};
 
         while (iss >> word) 
         {
             word = normalize(word);
             if (!word.empty()) 
-                addWordToIndex(word, doc_id);   
+                add_word_too_index(word, doc_id);   
         }
     }
 }
@@ -109,7 +107,8 @@ std::list<int> InvertedIndex::getUnion(const std::list<int>& l1, const std::list
 
     while (it1 != l1.end() && it2 != l2.end()) 
     {
-        if (*it1 == *it2) {
+        if (*it1 == *it2) 
+        {
             result_of_union.push_back(*it1);
             ++it1;
             ++it2;
@@ -157,7 +156,7 @@ std::string InvertedIndex::to_lower_case(std::string& word)
     return word;
 }
 
-void InvertedIndex::addWordToIndex(const std::string &word, int docId)
+void InvertedIndex::add_word_too_index(const std::string &word, int docId)
 {
     if (!word.empty()) 
     {
