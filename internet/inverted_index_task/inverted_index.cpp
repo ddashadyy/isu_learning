@@ -33,11 +33,11 @@ void InvertedIndex::indexDocument(const std::string& path)
     }
 }
 
-void InvertedIndex::indexCollection(const std::string& path)
+void InvertedIndex::indexCollection(const std::string& folder)
 {
     namespace fs = std::filesystem;
 
-    fs::path dir(path);
+    fs::path dir(folder);
     if (!fs::exists(dir) || !fs::is_directory(dir)) return; 
 
     for (const auto& entry : fs::directory_iterator(dir)) 

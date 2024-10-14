@@ -13,7 +13,7 @@ public:
     ~InvertedIndex() = default;
 
     void indexDocument(const std::string& path);
-    void indexCollection(const std::string& path);
+    void indexCollection(const std::string& folder);
     std::list<int> executeQuery(const std::string& query);
     
 private:
@@ -26,5 +26,4 @@ private:
 
     std::list<std::string> m_documents;
     std::unordered_map<std::string, std::list<int>> m_index;
-
 };
