@@ -17,11 +17,11 @@ public:
     std::list<int> executeQuery(const std::string& query);
     
 private:
-    std::list<int> getIntersection(const std::list<int>& l1, const std::list<int>& l2);
-    std::list<int> getUnion(const std::list<int>& l1, const std::list<int>& l2);
+    std::list<int> getIntersection(const std::list<int>& l1, const std::list<int>& l2) const;
+    std::list<int> getUnion(const std::list<int>& l1, const std::list<int>& l2) const;
 
-    std::string normalize(const std::string& term);
-    std::string to_lower_case(std::string& word);
+    std::string normalize(const std::string& term) const;
+    std::string to_lower_case(std::string& word) const;
     void add_word_too_index(const std::string& word, int docId);
 
     std::list<std::string> m_documents;

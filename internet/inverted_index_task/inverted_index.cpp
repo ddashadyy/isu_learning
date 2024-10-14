@@ -76,7 +76,7 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
     return executed_query;
 }
 
-std::list<int> InvertedIndex::getIntersection(const std::list<int>& l1, const std::list<int>& l2)
+std::list<int> InvertedIndex::getIntersection(const std::list<int>& l1, const std::list<int>& l2) const
 {
     std::list<int> result_of_intersection;
 
@@ -98,7 +98,7 @@ std::list<int> InvertedIndex::getIntersection(const std::list<int>& l1, const st
     return result_of_intersection;
 }
 
-std::list<int> InvertedIndex::getUnion(const std::list<int>& l1, const std::list<int>& l2)
+std::list<int> InvertedIndex::getUnion(const std::list<int>& l1, const std::list<int>& l2) const
 {
     std::list<int> result_of_union;
 
@@ -141,7 +141,7 @@ std::list<int> InvertedIndex::getUnion(const std::list<int>& l1, const std::list
     return result_of_union;
 }
 
-std::string InvertedIndex::normalize(const std::string& term)
+std::string InvertedIndex::normalize(const std::string& term) const
 {
     std::string normalized{};
     for (unsigned char c : term) 
@@ -150,7 +150,7 @@ std::string InvertedIndex::normalize(const std::string& term)
     return normalized;
 }
 
-std::string InvertedIndex::to_lower_case(std::string& word)
+std::string InvertedIndex::to_lower_case(std::string& word) const
 {
     std::transform(word.begin(), word.end(), word.begin(), ::tolower);
     return word;
