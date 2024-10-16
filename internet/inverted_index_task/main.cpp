@@ -18,10 +18,10 @@ int main()
     auto invertedIndexPtr = std::make_unique<InvertedIndex>();
 
     invertedIndexPtr->indexCollection("collection");
-    invertedIndexPtr->serialize();
+    invertedIndexPtr->serialize("serialized.bin");
 
     auto deserializedInvertedIndexPtr = std::make_unique<InvertedIndex>(std::move(invertedIndexPtr->deserialize("serialized.bin")));
-    
+
     std::cout << "Brutus " << deserializedInvertedIndexPtr->executeQuery("Brutus") << std::endl;
     std::cout << "Caesar " << deserializedInvertedIndexPtr->executeQuery("Caesar") << std::endl;
     std::cout << "Calpurnia " << deserializedInvertedIndexPtr->executeQuery("Calpurnia") << std::endl;

@@ -18,7 +18,7 @@ struct IByteSerialize
     IByteSerialize() = default;
     virtual ~IByteSerialize() = default;
 
-    virtual void serialize() = 0;
+    virtual void serialize( const std::string& file_name ) = 0;
     virtual reference deserialize( const std::string& file_name ) = 0;
 };
 

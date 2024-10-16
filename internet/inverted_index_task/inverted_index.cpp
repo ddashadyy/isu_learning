@@ -82,9 +82,9 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
     return executed_query;
 }
 
-void InvertedIndex::serialize()
+void InvertedIndex::serialize(const std::string& file_name)
 {
-    std::ofstream out("serialized.bin", std::ios::binary);
+    std::ofstream out(file_name, std::ios::binary);
     
     size_t doc_count = m_documents.size();
     out.write(reinterpret_cast<const char*>(&doc_count), sizeof(doc_count));
