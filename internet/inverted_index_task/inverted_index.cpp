@@ -6,7 +6,13 @@
 #include <cctype>
 #include <algorithm>
 
-void InvertedIndex::indexDocument(const std::string& path)
+InvertedIndex::InvertedIndex(InvertedIndex&& other)
+{
+    m_documents = std::move(other.m_documents);
+    m_index = std::move(other.m_index);
+}
+
+void InvertedIndex::indexDocument(const std::string &path)
 {
     std::ifstream file(path);
     if (!file.is_open()) 
@@ -66,9 +72,9 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
         word = to_lower_case(word);
 
         if (temp.empty() || temp == "or") 
-            executed_query = getUnion(executed_query, m_index[word]);
+            executed_query = get_union(executed_query, m_index[word]);
         else if (temp == "and")
-            executed_query = getIntersection(executed_query, m_index[word]);
+            executed_query = get_intersection(executed_query, m_index[word]);
 
         temp = word;
     }
@@ -76,7 +82,93 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
     return executed_query;
 }
 
-std::list<int> InvertedIndex::getIntersection(const std::list<int>& l1, const std::list<int>& l2) const
+void InvertedIndex::serialize()
+{
+    std::ofstream out("serialized.bin", std::ios::binary);
+    
+    size_t doc_count = m_documents.size();
+    out.write(reinterpret_cast<const char*>(&doc_count), sizeof(doc_count));
+    
+    for (const auto& docs : m_documents) 
+    {
+        size_t length = docs.size();
+        out.write(reinterpret_cast<const char*>(&length), sizeof(length));
+        out.write(docs.c_str(), length);
+    }
+    
+    size_t index_size = m_index.size();
+    out.write(reinterpret_cast<const char*>(&index_size), sizeof(index_size));
+    
+    for (const auto& [key, value] : m_index) 
+    {
+        size_t key_length = key.size();
+        out.write(reinterpret_cast<const char*>(&key_length), sizeof(key_length));
+        out.write(key.c_str(), key_length);
+        
+        size_t value_size = value.size();
+        out.write(reinterpret_cast<const char*>(&value_size), sizeof(value_size));
+        
+        for (const auto& val : value) 
+        {
+            out.write(reinterpret_cast<const char*>(&val), sizeof(val));
+        }
+    }
+
+}
+
+InvertedIndex& InvertedIndex::deserialize(const std::string& file_name)
+{
+    std::ifstream in(file_name, std::ios::binary);
+    if (!in) 
+    {
+        std::cerr << "Failed to open file: " << file_name << std::endl;
+        return *this; 
+    }
+
+    size_t doc_count;
+    in.read(reinterpret_cast<char*>(&doc_count), sizeof(doc_count));
+    
+    m_documents.clear();
+    for (size_t i = 0; i < doc_count; ++i) 
+    {
+        size_t length;
+        in.read(reinterpret_cast<char*>(&length), sizeof(length));
+        
+        std::string doc(length, '0'); 
+        in.read(&doc[0], length);
+        m_documents.push_back(doc);
+    }
+
+    size_t index_size;
+    in.read(reinterpret_cast<char*>(&index_size), sizeof(index_size));
+    
+    m_index.clear();
+    for (size_t i = 0; i < index_size; ++i) 
+    {
+        size_t key_length;
+        in.read(reinterpret_cast<char*>(&key_length), sizeof(key_length));
+        
+        std::string key(key_length, '0');
+        in.read(&key[0], key_length);
+        
+        size_t value_size;
+        in.read(reinterpret_cast<char*>(&value_size), sizeof(value_size));
+
+        std::list<int> values;
+        for (size_t j = 0; j < value_size; ++j) 
+        {
+            int val;
+            in.read(reinterpret_cast<char*>(&val), sizeof(val));
+            values.push_back(val);
+        }
+        
+        m_index[key] = values; 
+    }
+
+    return *this; 
+}
+
+std::list<int> InvertedIndex::get_intersection(const std::list<int>& l1, const std::list<int>& l2) const
 {
     std::list<int> result_of_intersection;
 
@@ -98,7 +190,7 @@ std::list<int> InvertedIndex::getIntersection(const std::list<int>& l1, const st
     return result_of_intersection;
 }
 
-std::list<int> InvertedIndex::getUnion(const std::list<int>& l1, const std::list<int>& l2) const
+std::list<int> InvertedIndex::get_union(const std::list<int>& l1, const std::list<int>& l2) const
 {
     std::list<int> result_of_union;
 

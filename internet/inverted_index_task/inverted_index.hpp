@@ -3,22 +3,26 @@
 #include <string>
 #include <list>
 #include <unordered_map>
+#include "serialization.hpp"
 
 
-
-class InvertedIndex
+class InvertedIndex : IByteSerialize<InvertedIndex>
 {
 public:
     InvertedIndex() = default;
+    InvertedIndex( InvertedIndex&& other );
     ~InvertedIndex() = default;
 
     void indexDocument(const std::string& path);
     void indexCollection(const std::string& folder);
     std::list<int> executeQuery(const std::string& query);
     
+    void serialize() override final;
+    InvertedIndex& deserialize(const std::string& file_name) override final;
+
 private:
-    std::list<int> getIntersection(const std::list<int>& l1, const std::list<int>& l2) const;
-    std::list<int> getUnion(const std::list<int>& l1, const std::list<int>& l2) const;
+    std::list<int> get_intersection(const std::list<int>& l1, const std::list<int>& l2) const;
+    std::list<int> get_union(const std::list<int>& l1, const std::list<int>& l2) const;
 
     std::string normalize(const std::string& term) const;
     std::string to_lower_case(std::string& word) const;
