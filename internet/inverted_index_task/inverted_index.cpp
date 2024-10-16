@@ -82,9 +82,9 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
     return executed_query;
 }
 
-void InvertedIndex::serialize(const std::string& file_name)
+void InvertedIndex::serialize(const std::string& destination)
 {
-    std::ofstream out(file_name, std::ios::binary);
+    std::ofstream out(destination, std::ios::binary);
     
     size_t doc_count = m_documents.size();
     out.write(reinterpret_cast<const char*>(&doc_count), sizeof(doc_count));
@@ -116,12 +116,12 @@ void InvertedIndex::serialize(const std::string& file_name)
 
 }
 
-InvertedIndex& InvertedIndex::deserialize(const std::string& file_name)
+InvertedIndex& InvertedIndex::deserialize(const std::string& source)
 {
-    std::ifstream in(file_name, std::ios::binary);
+    std::ifstream in(source, std::ios::binary);
     if (!in) 
     {
-        std::cerr << "Failed to open file: " << file_name << std::endl;
+        std::cerr << "Failed to open file: " << source << std::endl;
         return *this; 
     }
 

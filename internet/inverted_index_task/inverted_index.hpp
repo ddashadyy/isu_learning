@@ -17,8 +17,8 @@ public:
     void indexCollection( const std::string& folder );
     std::list<int> executeQuery( const std::string& query );
     
-    void serialize( const std::string& file_name ) override final;
-    InvertedIndex& deserialize( const std::string& file_name ) override final;
+    void serialize( const std::string& destination ) override final;
+    InvertedIndex& deserialize( const std::string& source ) override final;
 
 private:
     std::list<int> get_intersection( const std::list<int>& l1, const std::list<int>& l2 ) const;
