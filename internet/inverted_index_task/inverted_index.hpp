@@ -3,6 +3,7 @@
 #include <string>
 #include <list>
 #include <unordered_map>
+#include <filesystem>
 #include "serialization.hpp"
 
 
@@ -26,7 +27,12 @@ private:
 
     std::string normalize( const std::string& term ) const;
     std::string to_lower_case( std::string& word ) const;
-    void add_word_too_index( const std::string& word, int docId );
+    void add_word_to_index( const std::string& word, int doc_id );
+
+    void log_document(const std::string& file_name, int doc_id);
+    void log_top_table();
+    void log_bottom_table();
+
 
     std::list<std::string> m_documents;
     std::unordered_map<std::string, std::list<int>> m_index;

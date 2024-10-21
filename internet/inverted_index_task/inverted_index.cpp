@@ -2,7 +2,6 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <filesystem>
 #include <cctype>
 #include <algorithm>
 
@@ -12,7 +11,7 @@ InvertedIndex::InvertedIndex(InvertedIndex&& other)
     m_index = std::move(other.m_index);
 }
 
-void InvertedIndex::indexDocument(const std::string &path)
+void InvertedIndex::indexDocument(const std::string& path)
 {
     std::ifstream file(path);
     if (!file.is_open()) 
@@ -20,6 +19,8 @@ void InvertedIndex::indexDocument(const std::string &path)
         std::cerr << "Could not open the file: " << path << std::endl;
         return;
     }
+
+    if (std::binary_search(m_documents.begin(), m_documents.end(), path)) return;
     
     std::string line{};
     m_documents.push_back(path); 
@@ -34,29 +35,32 @@ void InvertedIndex::indexDocument(const std::string &path)
         {
             word = normalize(word);
             if (!word.empty()) 
-                add_word_too_index(word, doc_id);   
+                add_word_to_index(word, doc_id);   
         }
     }
+
+    log_document(path, doc_id);
 }
 
 void InvertedIndex::indexCollection(const std::string& folder)
 {
     namespace fs = std::filesystem;
 
-    fs::path dir(folder);
+    log_top_table();
+
+    const fs::path dir(folder);
     if (!fs::exists(dir) || !fs::is_directory(dir)) return; 
 
     for (const auto& entry : fs::directory_iterator(dir)) 
     {
         if (fs::is_regular_file(entry.status())) 
         {
-            std::string key = entry.path().string();
-            std::cout << key << std::endl;
-
+            const std::string key = entry.path().string();
             indexDocument(key);       
         }
     }
-    std::cout << "\n";
+
+    log_bottom_table();
 }
 
 std::list<int> InvertedIndex::executeQuery(const std::string& query)
@@ -233,13 +237,16 @@ std::list<int> InvertedIndex::get_union(const std::list<int>& l1, const std::lis
     return result_of_union;
 }
 
-std::string InvertedIndex::normalize(const std::string& term) const
-{
-    std::string normalized{};
-    for (unsigned char c : term) 
-        if (std::isalpha(c)) normalized.push_back(std::tolower(c));
+std::string InvertedIndex::normalize(const std::string& term) const {
+	std::string normalized{};
 
-    return normalized;
+	for (unsigned char c : term)
+	{
+		if (c == 39) break;
+		if (std::isalpha(c)) normalized.push_back(std::tolower(c));
+	}
+
+	return normalized;
 }
 
 std::string InvertedIndex::to_lower_case(std::string& word) const
@@ -248,13 +255,32 @@ std::string InvertedIndex::to_lower_case(std::string& word) const
     return word;
 }
 
-void InvertedIndex::add_word_too_index(const std::string &word, int docId)
+void InvertedIndex::add_word_to_index(const std::string &word, int doc_id)
 {
     if (!word.empty()) 
     {
         auto& postings = m_index[word];
-        if (postings.empty() || postings.back() != docId)
-            postings.push_back(docId);
+        if (postings.empty() || postings.back() != doc_id)
+            postings.push_back(doc_id);
         
     }
+}
+
+void InvertedIndex::log_document(const std::string& file_name, int doc_id)
+{
+    std::cout << "| " << std::setw(6) << doc_id
+                      << " | " << std::setw(60) << file_name
+                      << " | " << std::setw(9) << m_index.size() << " |" << std::endl;
+}
+
+void InvertedIndex::log_top_table()
+{
+    std::cout << "+--------+--------------------------------------------------------------+-----------+" << std::endl;
+    std::cout << "| docID  | file                                                         | indexsize |" << std::endl;
+    std::cout << "+--------+--------------------------------------------------------------+-----------+" << std::endl;
+}
+
+void InvertedIndex::log_bottom_table()
+{
+    std::cout << "+--------+--------------------------------------------------------------+-----------+" << std::endl;
 }
