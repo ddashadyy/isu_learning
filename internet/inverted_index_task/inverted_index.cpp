@@ -29,7 +29,7 @@ void InvertedIndex::indexDocument(const std::string& path)
     std::ifstream file(path);
     if (!file.is_open()) 
     {
-        std::cerr << "Could not open the file: " << path << std::endl;
+        throw std::ios_base::failure("Could not open the file");
         return;
     }
 
@@ -202,12 +202,8 @@ InvertedIndex& InvertedIndex::readFromDisk(const std::string& file_name)
 
     char c;
     if (!construct_file.is_open()) 
-    {
-        throw std::runtime_error("could not open the file");
         return invertedIndex;
-    }
     
-
     else if (!(construct_file >> c))
         return invertedIndex;
     
@@ -296,7 +292,6 @@ std::string InvertedIndex::normalize(const std::string& term) const noexcept
         }
         return normalized;
     }
-    
 }
 
 void InvertedIndex::add_word_to_index(const std::string &word, int doc_id)
@@ -305,8 +300,7 @@ void InvertedIndex::add_word_to_index(const std::string &word, int doc_id)
     {
         auto& postings = m_index[word];
         if (postings.empty() || postings.back() != doc_id)
-            postings.push_back(doc_id);
-        
+            postings.push_back(doc_id);   
     }
 }
 
@@ -331,7 +325,6 @@ void InvertedIndex::log_bottom_table() const noexcept
 
 int InvertedIndex::count_character(const std::string &str, char ch) const noexcept
 {
-
     int count = 0;
     for (char c : str) {
         if (c == ch) {
@@ -339,6 +332,4 @@ int InvertedIndex::count_character(const std::string &str, char ch) const noexce
         }
     }
     return count;
-    
 }
-
