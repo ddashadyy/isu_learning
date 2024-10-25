@@ -35,7 +35,7 @@ int main()
     {
         auto deserializedInvertedIndexPtr = std::make_unique<InvertedIndex>(InvertedIndex::readFromDisk("serialized"));
 
-        deserializedInvertedIndexPtr->indexCollection("collection");
+        // deserializedInvertedIndexPtr->indexCollection("/home/gennadiy/third_course/internet/inverted_index_task/collection");
         deserializedInvertedIndexPtr->indexCollection("collection");
         deserializedInvertedIndexPtr->serialize("serialized");
 

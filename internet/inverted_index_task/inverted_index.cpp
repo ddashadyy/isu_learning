@@ -1,10 +1,12 @@
 #include "inverted_index.hpp"
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <fstream>
 #include <filesystem>
 #include <cctype>
 #include <algorithm>
+
 
 
 
@@ -61,10 +63,13 @@ void InvertedIndex::indexCollection(const std::string& folder)
     log_top_table();
 
     const fs::path dir(folder);
-    if (!fs::exists(dir) || !fs::is_directory(dir)) return; 
+    if (!fs::exists(dir)) return; 
 
     for (const auto& entry : fs::directory_iterator(dir)) 
     {
+        // recursive traversal
+        if (fs::is_directory(entry)) indexCollection(entry.path().string());
+
         if (fs::is_regular_file(entry.status())) 
         {
             const std::string key = entry.path().string();
@@ -306,9 +311,10 @@ void InvertedIndex::add_word_to_index(const std::string &word, int doc_id)
 
 void InvertedIndex::log_document(const std::string& file_name, int doc_id) const noexcept
 {
-    std::cout << "| " << std::setw(6) << doc_id
-                      << " | " << std::setw(60) << file_name
-                      << " | " << std::setw(9) << m_index.size() << " |" << std::endl;
+    std::cout << std::left 
+              << "| " << std::setw(6) << doc_id 
+              << " | " << std::setw(60) << file_name
+              << " | " << std::setw(9) << m_index.size() << " |" << std::endl;
 }
 
 void InvertedIndex::log_top_table() const noexcept

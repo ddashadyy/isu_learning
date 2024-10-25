@@ -8,3 +8,7 @@ inf_sys_des/first_task/bin
 inf_sys_des/read_diagram/.vscode
 internet/inverted_index_task/.vscode/
 internet/inverted_index_task/serialized.bin
+internet/inverted_index_task/main
+internet/inverted_index_task/serialized
+internet/inverted_index_task/.serialized.bin.swp
+.vscode
