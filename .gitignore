@@ -12,3 +12,9 @@ internet/inverted_index_task/main
 internet/inverted_index_task/serialized
 internet/inverted_index_task/.serialized.bin.swp
 .vscode
+internet/inverted_index_task/CMakeFiles
+internet/inverted_index_task/CMakeCache.txt
+internet/inverted_index_task/Makefile
+internet/inverted_index_task/cmake_install.cmake
+internet/inverted_index_task/html_parser.hpp
+internet/inverted_index_task/html_parser.cpp

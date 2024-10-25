@@ -8,7 +8,7 @@
 #include <algorithm>
 
 
-
+// #define INVERTED_INDEX_TESTS
 
 InvertedIndex::InvertedIndex(const InvertedIndex &other)
 {
@@ -58,9 +58,12 @@ void InvertedIndex::indexDocument(const std::string& path)
 void InvertedIndex::indexCollection(const std::string& folder)
 {
     namespace fs = std::filesystem;
-    int counter = 0;
+    
 
+#ifndef INVERTED_INDEX_TESTS
+    int counter = 0;
     log_top_table();
+#endif
 
     const fs::path dir(folder);
     if (!fs::exists(dir)) return; 
@@ -73,14 +76,20 @@ void InvertedIndex::indexCollection(const std::string& folder)
         if (fs::is_regular_file(entry.status())) 
         {
             const std::string key = entry.path().string();
-            indexDocument(key);       
+            indexDocument(key);
+
+        #ifndef INVERTED_INDEX_TESTS                   
             log_document(key, counter);
             counter++;
+        #endif
+
         }
     }
-
+#ifndef INVERTED_INDEX_TESTS
     log_bottom_table();
+#endif
 }
+
 
 std::list<int> InvertedIndex::executeQuery(const std::string& query) 
 {
