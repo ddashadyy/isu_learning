@@ -18,3 +18,9 @@ internet/inverted_index_task/Makefile
 internet/inverted_index_task/cmake_install.cmake
 internet/inverted_index_task/html_parser.hpp
 internet/inverted_index_task/html_parser.cpp
+
+inf_sys_des/test_software/CMakeFiles
+inf_sys_des/test_software/CMakeCache.txt
+inf_sys_des/test_software/Makefile
+inf_sys_des/test_software/cmake_install.cmake
+inf_sys_des/test_software/test
