@@ -1,16 +1,13 @@
 internet/inverted_index_task/main.exe
-internet.inverted_index_task/.vscode
 internet.inverted_index_task/serialized.bin
-inf_sys_des/.idea
-inf_sys_des/first_task/.idea
-inf_sys_des/first_task/first_task.iml
-inf_sys_des/first_task/bin
 inf_sys_des/read_diagram/.vscode
 internet/inverted_index_task/.vscode/
 internet/inverted_index_task/serialized.bin
 internet/inverted_index_task/main
 internet/inverted_index_task/serialized
 internet/inverted_index_task/.serialized.bin.swp
+internet/inverted_index_task/collection
+internet/inverted_index_task/collection_hmtl
 .vscode
 internet/inverted_index_task/CMakeFiles
 internet/inverted_index_task/CMakeCache.txt
@@ -18,7 +15,6 @@ internet/inverted_index_task/Makefile
 internet/inverted_index_task/cmake_install.cmake
 internet/inverted_index_task/html_parser.hpp
 internet/inverted_index_task/html_parser.cpp
-
 inf_sys_des/test_software/CMakeFiles
 inf_sys_des/test_software/CMakeCache.txt
 inf_sys_des/test_software/Makefile
