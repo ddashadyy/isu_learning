@@ -20,3 +20,7 @@ inf_sys_des/test_software/CMakeCache.txt
 inf_sys_des/test_software/Makefile
 inf_sys_des/test_software/cmake_install.cmake
 inf_sys_des/test_software/test
+internet/inverted_index_task/.cache/
+internet/inverted_index_task/build/
+internet/inverted_index_task/collection_html/
+internet/inverted_index_task/index.html
