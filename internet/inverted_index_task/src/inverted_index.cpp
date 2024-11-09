@@ -74,6 +74,8 @@ void InvertedIndex::indexHTML(const std::string& html)
     int doc_id = m_documents.size();
     m_documents.push_back(html);
 
+    std::cout << html << std::endl;
+
     std::stringstream buffer;
     buffer << html_file.rdbuf();
 

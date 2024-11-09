@@ -4,7 +4,7 @@ project(inverted_index)
 
 set(CMAKE_CXX_STANDARD 20)            
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
-set(SOURCE_FILES src/main.cpp src/inverted_index.cpp)
+set(SOURCE_FILES src/main.cpp src/inverted_index.cpp src/web_crawler.cpp)
 
 add_executable(inverted-index ${SOURCE_FILES})
 

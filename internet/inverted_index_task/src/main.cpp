@@ -1,30 +1,29 @@
 #include <iostream>
-#include <fstream>
-#include "pugixml.hpp"
+#include <list>
+#include "inverted_index.hpp"
+#include "web_crawler.hpp"
 
-int main() {
-  // Загружаем HTML-код из файла
-  std::ifstream file("/home/gennadiy/third_course/internet/inverted_index_task/collection_html/All's Well That Ends Well  Entire Play.htm");
-  std::string html((std::istreambuf_iterator<char>(file)),
-                    std::istreambuf_iterator<char>());
+std::ostream& operator << (std::ostream& os, const std::list<int> lst)
+{
+    os.put('[');
+    os.put(' ');
+    for (auto it = lst.begin(); it != lst.end(); ++it)
+        os << *it << " ";
+    os.put(']');
 
-  // Создаем объект xml_document и загружаем HTML-код
-  pugi::xml_document doc;
-  doc.load_string(html.c_str());
-
-  // Получаем заголовок пьесы
-  pugi::xml_node title = doc.child("html").child("head").child("title");
-  std::cout << "Title: " << title.text().as_string() << std::endl;
-
-  // Получаем текст первого реплики
-  pugi::xml_node first_speech = doc.child("html").child("body").child("table").child("tr").child("td").child("H3").next_sibling().child("p").child("blockquote").child("A");
-  std::cout << "First speech: " << first_speech.text().as_string() << std::endl;
-
-  // Выводим все реплики 
-  for (auto const& speech : doc.select_nodes("//A")) {
-    std::cout << "Speaker: " << speech.attribute().as_string() << std::endl; 
-  }
-
-  return 0;
+    return os;
 }
+
+
+int main()
+{
+    WebCrawler wc(3);
+    wc.crawl("https://github.com/madilkhan002/C-Multi-Threaded-Web-Crawler/blob/master/multheaded_web_crawler.cpp", 0);
+
+    return EXIT_SUCCESS;
+}
+
+
+
+
 
