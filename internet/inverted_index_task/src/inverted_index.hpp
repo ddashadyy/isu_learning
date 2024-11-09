@@ -2,11 +2,10 @@
 
 #include <list>
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include "serialization.hpp"
-
-
+#include <gumbo.h>
+#include <vector>
 
 class InvertedIndex final : IByteSerialize<InvertedIndex>
 {
@@ -17,7 +16,11 @@ public:
     ~InvertedIndex() = default;
 
     void indexDocument( const std::string& path );
+    void indexHTML( const std::string& html );
+    void indexHTMLByLink( const std::string& url );
     void indexCollection( const std::string& folder );
+
+
     std::list<int> executeQuery( const std::string& query );
     
     void serialize( const std::string& destination ) override;
@@ -37,9 +40,13 @@ private:
     void log_bottom_table() const noexcept;
 
     int count_character(const std::string& str, char ch) const noexcept;
+
+    void extract_text(GumboNode* node, std::string& output);
+    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
+
+    std::vector<std::string> splitString(std::string& line) noexcept;
     
     std::list<std::string> m_documents{};
     std::unordered_map<std::string, std::list<int>> m_index{};     
-    // добавить хэш мапу для буфера и правильно ее сериализовать и десериализовать
 };
 

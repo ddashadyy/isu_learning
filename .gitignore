@@ -13,8 +13,6 @@ internet/inverted_index_task/CMakeFiles
 internet/inverted_index_task/CMakeCache.txt
 internet/inverted_index_task/Makefile
 internet/inverted_index_task/cmake_install.cmake
-internet/inverted_index_task/html_parser.hpp
-internet/inverted_index_task/html_parser.cpp
 inf_sys_des/test_software/CMakeFiles
 inf_sys_des/test_software/CMakeCache.txt
 inf_sys_des/test_software/Makefile
@@ -24,3 +22,4 @@ internet/inverted_index_task/.cache/
 internet/inverted_index_task/build/
 internet/inverted_index_task/collection_html/
 internet/inverted_index_task/index.html
+internet/inverted_index_task/github.html
