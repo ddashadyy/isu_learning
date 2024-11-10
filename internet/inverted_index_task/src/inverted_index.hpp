@@ -18,7 +18,8 @@ public:
     void indexDocument( const std::string& path );
     void indexHTML( const std::string& html );
     void indexHTMLByLink( const std::string& url );
-    void indexCollection( const std::string& folder );
+
+    void indexCollection( const std::string& folder, const std::string& index_type = "document" );
 
 
     std::list<int> executeQuery( const std::string& query );

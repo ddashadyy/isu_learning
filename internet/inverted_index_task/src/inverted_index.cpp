@@ -74,7 +74,7 @@ void InvertedIndex::indexHTML(const std::string& html)
     int doc_id = m_documents.size();
     m_documents.push_back(html);
 
-    std::cout << html << std::endl;
+    // std::cout << html << std::endl;
 
     std::stringstream buffer;
     buffer << html_file.rdbuf();
@@ -156,8 +156,10 @@ void InvertedIndex::indexHTMLByLink(const std::string& url)
 void InvertedIndex::extract_text(GumboNode* node, std::string& output)
 {  
     if (node->type == GUMBO_NODE_TEXT) 
+    {
         output.append(node->v.text.text);
-
+        output.append(" ");
+    }
     else if (node->type == GUMBO_NODE_ELEMENT) 
         for (unsigned int i = 0; i < node->v.element.children.length; ++i) 
             extract_text(static_cast<GumboNode*>(node->v.element.children.data[i]), output);
@@ -190,40 +192,70 @@ std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
     return result;
 }
 
-void InvertedIndex::indexCollection(const std::string& folder)
+void InvertedIndex::indexCollection(const std::string& folder, const std::string& index_type)
 {
-    namespace fs = std::filesystem;
-
-#ifndef INVERTED_INDEX_TESTS
-    int counter = 0;
-    log_top_table();
-#endif
-
-    const fs::path dir(folder);
-    if (!fs::exists(dir)) return; 
-
-    for (const auto& entry : fs::directory_iterator(dir)) 
+    if (index_type == "web_page")
     {
-        // recursive traversal
-        if (fs::is_directory(entry)) indexCollection(entry.path().string());
+        int counter = 0;
+        log_top_table();
 
-        if (fs::is_regular_file(entry.status())) 
+        // Исключаем повторную индексацию 
+        auto find_it = std::find(m_documents.begin(), m_documents.end(), folder);
+        if (find_it != m_documents.end()) return;
+
+        std::ifstream file(folder);
+        if (!file.is_open()) 
         {
-            const std::string key = entry.path().string();
-            indexDocument(key);
-            // indexHTML(key);
-            // indexHTMLByLink(key);
-
-        #ifndef INVERTED_INDEX_TESTS                   
-            log_document(key, counter);
-            counter++;
-        #endif
-
+            throw std::ios_base::failure("Could not open the file");
+            return;
         }
+
+        int doc_id = m_documents.size(); 
+        m_documents.push_back(folder); 
+
+        std::string line{};
+        while (std::getline(file, line)) 
+        {
+            std::istringstream iss(line);
+            indexHTMLByLink(iss.str());
+
+            log_document(iss.str(), counter);
+        }
+        log_bottom_table();
     }
-#ifndef INVERTED_INDEX_TESTS
-    log_bottom_table();
-#endif
+                
+    else 
+    {
+        namespace fs = std::filesystem;
+
+        int counter = 0;
+        log_top_table();
+
+        const fs::path dir(folder);
+        if (!fs::exists(dir)) return; 
+
+        for (const auto& entry : fs::directory_iterator(dir)) 
+        {
+            // recursive traversal
+            if (fs::is_directory(entry)) indexCollection(entry.path().string(), index_type);
+
+            if (fs::is_regular_file(entry.status())) 
+            {
+                const std::string key = entry.path().string();
+                
+                if (index_type == "document")
+                    indexDocument(key);
+                else if (index_type == "html")
+                    indexHTML(key); 
+
+                log_document(key, counter);
+                counter++;
+            }
+        }
+
+        log_bottom_table();
+    }
+
 }
 
 std::list<int> InvertedIndex::executeQuery(const std::string& query) 
