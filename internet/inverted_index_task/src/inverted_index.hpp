@@ -6,14 +6,15 @@
 #include "serialization.hpp"
 #include <gumbo.h>
 #include <vector>
+#include <curl/curl.h>
 
 class InvertedIndex : IByteSerialize<InvertedIndex>
 {
 public:
-    InvertedIndex() = default;
+    InvertedIndex() { curl_global_init(CURL_GLOBAL_DEFAULT); }
     InvertedIndex( const InvertedIndex& other );
     InvertedIndex( InvertedIndex&& other );
-    virtual ~InvertedIndex() = default;
+    virtual ~InvertedIndex() { curl_global_cleanup(); };
 
     void indexDocument( const std::string& path );
     void indexHTML( const std::string& html );
@@ -42,7 +43,7 @@ private:
     int count_character(const std::string& str, char ch) const noexcept;
 
     void extract_text(GumboNode* node, std::string& output);
-    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp);
+    static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
 
     std::vector<std::string> splitString(std::string& line) noexcept;
     

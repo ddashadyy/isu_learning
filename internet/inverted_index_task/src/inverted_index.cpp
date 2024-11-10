@@ -15,12 +15,14 @@
 
 InvertedIndex::InvertedIndex(const InvertedIndex &other)
 {
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     m_documents = other.m_documents;
     m_index = other.m_index;
 }
 
 InvertedIndex::InvertedIndex(InvertedIndex &&other)
 {
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     m_documents = std::move(other.m_documents);
     m_index = std::move(other.m_index);
 }
@@ -73,8 +75,6 @@ void InvertedIndex::indexHTML(const std::string& html)
 
     int doc_id = m_documents.size();
     m_documents.push_back(html);
-
-    // std::cout << html << std::endl;
 
     std::stringstream buffer;
     buffer << html_file.rdbuf();
@@ -141,7 +141,9 @@ void InvertedIndex::indexHTMLByLink(const std::string& url)
 
     extract_text(output->root, extracted_text);
     gumbo_destroy_output(&kGumboDefaultOptions, output);
-    
+
+    // std::cout << extracted_text << std::endl;
+
     auto splitted_string = splitString(extracted_text);
     
     for (auto& word : splitted_string)
@@ -150,7 +152,6 @@ void InvertedIndex::indexHTMLByLink(const std::string& url)
         if (!normalized_word.empty()) 
             add_word_to_index(normalized_word, doc_id);
     }
-
 }
 
 void InvertedIndex::extract_text(GumboNode* node, std::string& output)
@@ -166,10 +167,11 @@ void InvertedIndex::extract_text(GumboNode* node, std::string& output)
 }
 
 // Функция для обработки данных, полученных через curl
-size_t InvertedIndex::WriteCallback(void* contents, size_t size, size_t nmemb, void* userp)
+size_t InvertedIndex::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
 {
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
+    size_t totalSize = size * nmemb;
+    userp->append((char*)contents, totalSize);
+    return totalSize;
 }
 
 std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
