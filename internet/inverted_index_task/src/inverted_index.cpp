@@ -142,13 +142,16 @@ void InvertedIndex::indexHTMLByLink(const std::string& url)
     extract_text(output->root, extracted_text);
     gumbo_destroy_output(&kGumboDefaultOptions, output);
 
-    // std::cout << extracted_text << std::endl;
+    std::cout << extracted_text << std::endl;
+
+    log_document(url, doc_id);
 
     auto splitted_string = splitString(extracted_text);
     
     for (auto& word : splitted_string)
     {
         std::string normalized_word = normalize(word);
+        // std::cout << normalized_word << std::endl;
         if (!normalized_word.empty()) 
             add_word_to_index(normalized_word, doc_id);
     }
