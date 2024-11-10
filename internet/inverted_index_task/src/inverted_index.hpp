@@ -13,7 +13,7 @@ public:
     InvertedIndex() = default;
     InvertedIndex( const InvertedIndex& other );
     InvertedIndex( InvertedIndex&& other );
-    ~InvertedIndex() = default;
+    virtual ~InvertedIndex() = default;
 
     void indexDocument( const std::string& path );
     void indexHTML( const std::string& html );
