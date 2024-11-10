@@ -7,7 +7,7 @@
 #include <gumbo.h>
 #include <vector>
 
-class InvertedIndex final : IByteSerialize<InvertedIndex>
+class InvertedIndex : IByteSerialize<InvertedIndex>
 {
 public:
     InvertedIndex() = default;
@@ -20,7 +20,6 @@ public:
     void indexHTMLByLink( const std::string& url );
 
     void indexCollection( const std::string& folder, const std::string& index_type = "document" );
-
 
     std::list<int> executeQuery( const std::string& query );
     
