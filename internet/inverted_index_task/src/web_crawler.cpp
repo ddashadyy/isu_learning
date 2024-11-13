@@ -22,7 +22,6 @@ void WebCrawler::searchForLinks(GumboNode* node, std::set<std::string>& links)
         GumboAttribute* href = gumbo_get_attribute(&node->v.element.attributes, "href");
         if (href)
             links.insert(href->value);
-        
     }
 
     for (unsigned int i = 0; i < node->v.element.children.length; ++i) 
@@ -70,11 +69,10 @@ void WebCrawler::crawlHelper(const std::string& url, int depth, std::set<std::st
     searchForLinks(output->root, links);
     gumbo_destroy_output(&kGumboDefaultOptions, output);
 
-    // std::cout << "Links found on " << url << ":" << std::endl;
     for (const auto& link : links) 
     {
         std::string absoluteLink = resolveUrl(url, link); 
-        // std::cout << absoluteLink << std::endl;
+
         indexHTMLByLink(absoluteLink);
         crawlHelper(absoluteLink, depth - 1, visited); 
     }
