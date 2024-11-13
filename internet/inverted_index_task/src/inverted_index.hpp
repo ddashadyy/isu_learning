@@ -7,6 +7,7 @@
 #include <gumbo.h>
 #include <vector>
 #include <curl/curl.h>
+#include <stack>
 
 class InvertedIndex : IByteSerialize<InvertedIndex>
 {
