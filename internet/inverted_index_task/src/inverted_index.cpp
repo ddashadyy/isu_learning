@@ -58,6 +58,7 @@ void InvertedIndex::indexDocument(const std::string& path)
     }
     file.close();
     
+    log_document(path, doc_id);
 }
 
 void InvertedIndex::indexHTML(const std::string& html)
@@ -97,6 +98,8 @@ void InvertedIndex::indexHTML(const std::string& html)
         if (!normalized_word.empty()) 
             add_word_to_index(normalized_word, doc_id);
     }
+
+    log_document(html, doc_id);
     
 }
 
@@ -142,59 +145,15 @@ void InvertedIndex::indexHTMLByLink(const std::string& url)
     extract_text(output->root, extracted_text);
     gumbo_destroy_output(&kGumboDefaultOptions, output);
 
-    std::cout << extracted_text << std::endl;
-
-    log_document(url, doc_id);
-
     auto splitted_string = splitString(extracted_text);
     
     for (auto& word : splitted_string)
     {
         std::string normalized_word = normalize(word);
-        // std::cout << normalized_word << std::endl;
         if (!normalized_word.empty()) 
             add_word_to_index(normalized_word, doc_id);
     }
-}
-
-void InvertedIndex::extract_text(GumboNode* node, std::string& output)
-{  
-    if (node->type == GUMBO_NODE_TEXT) 
-    {
-        output.append(node->v.text.text);
-        output.append(" ");
-    }
-    else if (node->type == GUMBO_NODE_ELEMENT) 
-        for (unsigned int i = 0; i < node->v.element.children.length; ++i) 
-            extract_text(static_cast<GumboNode*>(node->v.element.children.data[i]), output);
-}
-
-// Функция для обработки данных, полученных через curl
-size_t InvertedIndex::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
-{
-    size_t totalSize = size * nmemb;
-    userp->append((char*)contents, totalSize);
-    return totalSize;
-}
-
-std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
-{
-    std::regex regex("[^a-zA-Z]+");
-    
-    std::sregex_token_iterator iter(line.begin(), line.end(), regex, -1);
-    std::sregex_token_iterator end;
-    
-    std::vector<std::string> result;
-    for (; iter != end; ++iter) 
-    {
-        if (!iter->str().empty()) 
-        { 
-            result.push_back(*iter);
-            
-        }
-    }
-    
-    return result;
+    log_document(url, doc_id);
 }
 
 void InvertedIndex::indexCollection(const std::string& folder, const std::string& index_type)
@@ -224,7 +183,7 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
             std::istringstream iss(line);
             indexHTMLByLink(iss.str());
 
-            log_document(iss.str(), counter);
+            // log_document(iss.str(), counter);
         }
         log_bottom_table();
     }
@@ -253,7 +212,7 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
                 else if (index_type == "html")
                     indexHTML(key); 
 
-                log_document(key, counter);
+                // log_document(key, counter);
                 counter++;
             }
         }
@@ -261,6 +220,49 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
         log_bottom_table();
     }
 
+}
+
+void InvertedIndex::extract_text(GumboNode* node, std::string& output)
+{  
+    if (node->type == GUMBO_NODE_ELEMENT) 
+    {
+        GumboTag tag = node->v.element.tag;
+
+        if (tag == GUMBO_TAG_STYLE || tag == GUMBO_TAG_SCRIPT) 
+            return; 
+        
+        for (unsigned int i = 0; i < node->v.element.children.length; ++i)  
+        {
+            extract_text(static_cast<GumboNode*>(node->v.element.children.data[i]), output); 
+        }
+    } 
+
+    else if (node->type == GUMBO_NODE_TEXT)  
+    { 
+        output.append(node->v.text.text); 
+        output.append(" "); 
+    } 
+}
+
+// Функция для обработки данных, полученных через curl
+size_t InvertedIndex::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
+{
+    size_t totalSize = size * nmemb;
+    userp->append((char*)contents, totalSize);
+    return totalSize;
+}
+
+std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
+{
+    std::vector<std::string> words;
+    std::istringstream stream(line);
+    std::string word;
+
+    while (stream >> word) {
+        words.push_back(word);
+    }
+
+    return words;
 }
 
 std::list<int> InvertedIndex::executeQuery(const std::string& query) 
