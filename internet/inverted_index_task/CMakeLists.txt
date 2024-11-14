@@ -8,5 +8,13 @@ set(SOURCE_FILES src/main.cpp src/inverted_index.cpp src/web_crawler.cpp)
 
 add_executable(inverted-index ${SOURCE_FILES})
 
-target_link_libraries(inverted-index pugixml gumbo curl)
+find_library(STEMMER_LIB NAMES stemmer)
+if (STEMMER_LIB)
+    target_link_libraries(inverted-index ${STEMMER_LIB})
+else()
+    message(FATAL_ERROR "libstemmer not found")
+endif()
+
+target_link_libraries(inverted-index gumbo curl)
 include_directories(${Gumbo_INCLUDE_DIRS})
+
