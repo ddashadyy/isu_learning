@@ -3,11 +3,12 @@
 #include <list>
 #include <string>
 #include <unordered_map>
-#include "serialization.hpp"
 #include <gumbo.h>
 #include <vector>
 #include <curl/curl.h>
 #include <stack>
+#include "serialization.hpp"
+
 
 class InvertedIndex : IByteSerialize<InvertedIndex>
 {
@@ -34,6 +35,8 @@ private:
     std::list<int> get_intersection( const std::list<int>& l1, const std::list<int>& l2 ) const noexcept;
     std::list<int> get_union( const std::list<int>& l1, const std::list<int>& l2 ) const noexcept;
 
+    void processLogicalOperators(std::stack<std::string>& operators, std::stack<std::list<int>>& operands) noexcept;
+
     std::string normalize( const std::string& term ) const noexcept;
     void add_word_to_index( const std::string& word, int doc_id );
 
@@ -45,7 +48,6 @@ private:
 
     void extract_text(GumboNode* node, std::string& output);
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
-
     std::vector<std::string> splitString(std::string& line) noexcept;
     
     std::list<std::string> m_documents{};

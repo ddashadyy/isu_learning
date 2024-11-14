@@ -267,25 +267,41 @@ std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
 
 std::list<int> InvertedIndex::executeQuery(const std::string& query) 
 {
-    std::list<int> executed_query;
-    std::string temp{};
+    std::list<int> result;
 
-    std::istringstream stream(query);
-    std::string word{};
+    std::stack<std::string> operators;
+    std::stack<std::list<int>> operands;
 
-    while (stream >> word)
+    std::istringstream ss(query);
+    std::string token{};
+    while (std::getline(ss, token, ' ')) 
     {
-        std::transform(word.begin(), word.end(), word.begin(), ::tolower);
+        // удалить проболы и привести токены к нижнему регистру
+        token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());
+        std::transform(token.begin(), token.end(), token.begin(), ::tolower);
 
-        if (temp.empty() || temp == "or") 
-            executed_query = get_union(executed_query, m_index[word]);
-        else if (temp == "and")
-            executed_query = get_intersection(executed_query, m_index[word]);
+        if (token == "(") 
+            operators.push(token);
 
-        temp = word;
+        else if (token == ")") 
+        {
+            while (!operators.empty() && operators.top() != "(") 
+                processLogicalOperators(operators, operands);
+            operators.pop(); 
+        } 
+        else if (token == "and" || token == "or") 
+            operators.push(token);
+        else 
+            operands.push(m_index[token]);         
     }
 
-    return executed_query;
+    while (!operators.empty()) 
+        processLogicalOperators(operators, operands);
+    
+    result = operands.top();
+    operands.pop();
+
+    return result;
 }
 
 void InvertedIndex::serialize(const std::string& destination)
@@ -461,6 +477,21 @@ std::list<int> InvertedIndex::get_union(const std::list<int>& l1, const std::lis
     }
 
     return result_of_union;
+}
+
+void InvertedIndex::processLogicalOperators(std::stack<std::string>& operators, std::stack<std::list<int>>& operands) noexcept
+{
+    std::string op = operators.top();
+    operators.pop();
+
+    auto second_operand = operands.top(); operands.pop();
+    auto first_operand = operands.top(); operands.pop();
+    
+    if (op == "and")
+        operands.push(get_intersection(first_operand, second_operand));
+    else if (op == "or")
+        operands.push(get_union(first_operand, second_operand));
+
 }
 
 std::string InvertedIndex::normalize(const std::string& term) const noexcept
