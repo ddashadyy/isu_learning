@@ -1,26 +1,43 @@
-#include "inverted_index.hpp"
-#include <ios>
-#include <iostream>
+#include <cctype>
+#include <vector>
+#include <cstring>
 #include <iomanip>
-#include <iterator>
 #include <sstream>
 #include <fstream>
-#include <filesystem>
-#include <cctype>
+#include <iostream>
+#include <iterator>
 #include <algorithm>
-#include <vector>
-#include <regex>
+#include <filesystem>
 #include <curl/curl.h>
+#include <libstemmer.h>
+#include "inverted_index.hpp"
 
+InvertedIndex::InvertedIndex(const std::string& stop_words_file_path)
+{
+    std::ifstream stopWordsFile(stop_words_file_path);
+    if (!stopWordsFile.is_open()) 
+    {
+        std::cerr << "Ошибка открытия файла со стоп-словами: " << stop_words_file_path << std::endl;
+        return;
+    }
 
-InvertedIndex::InvertedIndex(const InvertedIndex &other)
+    std::string word;
+    while (stopWordsFile >> word) 
+    {
+        word = normalize(word);
+        m_stop_words.insert(word);
+    }
+    stopWordsFile.close();
+}
+
+InvertedIndex::InvertedIndex(const InvertedIndex& other)
 {
     curl_global_init(CURL_GLOBAL_DEFAULT);
     m_documents = other.m_documents;
     m_index = other.m_index;
 }
 
-InvertedIndex::InvertedIndex(InvertedIndex &&other)
+InvertedIndex::InvertedIndex(InvertedIndex&& other)
 {
     curl_global_init(CURL_GLOBAL_DEFAULT);
     m_documents = std::move(other.m_documents);
@@ -52,8 +69,9 @@ void InvertedIndex::indexDocument(const std::string& path)
         while (iss >> word) 
         {
             word = normalize(word);
-            if (!word.empty()) 
-                add_word_to_index(word, doc_id);   
+            if (m_stop_words.find(word) == m_stop_words.end())
+                if (!word.empty()) 
+                    add_word_to_index(word, doc_id);   
         }
     }
     file.close();
@@ -94,9 +112,10 @@ void InvertedIndex::indexHTML(const std::string& html)
 
     for (auto& word : splitted_string)
     {
-        std::string normalized_word = normalize(word);
-        if (!normalized_word.empty()) 
-            add_word_to_index(normalized_word, doc_id);
+        word = normalize(word);
+        if (m_stop_words.find(word) == m_stop_words.end())
+            if (!word.empty()) 
+                add_word_to_index(word, doc_id);
     }
 
     log_document(html, doc_id);
@@ -149,9 +168,10 @@ void InvertedIndex::indexHTMLByLink(const std::string& url)
     
     for (auto& word : splitted_string)
     {
-        std::string normalized_word = normalize(word);
-        if (!normalized_word.empty()) 
-            add_word_to_index(normalized_word, doc_id);
+        word = normalize(word);
+        if (m_stop_words.find(word) == m_stop_words.end())
+            if (!word.empty()) 
+                add_word_to_index(word, doc_id);
     }
     log_document(url, doc_id);
 }
@@ -276,9 +296,7 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
     std::string token{};
     while (std::getline(ss, token, ' ')) 
     {
-        // удалить проболы и привести токены к нижнему регистру
-        token.erase(std::remove_if(token.begin(), token.end(), ::isspace), token.end());
-        std::transform(token.begin(), token.end(), token.begin(), ::tolower);
+        token = normalize(token);
 
         if (token == "(") 
             operators.push(token);
@@ -292,7 +310,10 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
         else if (token == "and" || token == "or") 
             operators.push(token);
         else 
-            operands.push(m_index[token]);         
+            if (m_stop_words.find(token) == m_stop_words.end())
+                operands.push(m_index.at(token));
+            else 
+                operands.push(std::list<int>{});
     }
 
     while (!operators.empty()) 
@@ -494,30 +515,39 @@ void InvertedIndex::processLogicalOperators(std::stack<std::string>& operators, 
 
 }
 
-std::string InvertedIndex::normalize(const std::string& term) const noexcept
+std::string InvertedIndex::normalize(const std::string& term) const 
 {
-    char ap = 39;
-    if (count_character(term, ap) == 2)
-        return term.substr(term.find_first_of(ap) + 1, term.find_last_of(ap) - 2);
-
-    else
+    auto cleanWord = [](const std::string& word) 
     {
-	    std::string normalized{};
+        std::string cleaned;
+        std::copy_if(word.begin(), word.end(), std::back_inserter(cleaned),
+                     [](char c) { return c != '!' && c != '?' && c != '.' && c != ','; }); 
+        std::transform(cleaned.begin(), cleaned.end(), cleaned.begin(), 
+                       [](unsigned char c) { return std::tolower(c); }); 
+        return cleaned;
+    };
 
-        for (const auto c : term)
-        {
-            if (!std::isalpha(c)) break;
-            else normalized.push_back(std::tolower(c));
-        }
-        return normalized;
-    }
+    const char* algorithm = "english"; 
+    const char* charenc = nullptr; 
 
-    // std::string normalized_word;
-    // std::remove_copy_if(term.begin(), term.end(), std::back_inserter(normalized_word),
-    //                     [](unsigned char c) { return std::ispunct(c); });
-    // std::transform(normalized_word.begin(), normalized_word.end(), normalized_word.begin(),
-    //                [](unsigned char c) { return std::tolower(c); });
-    // return normalized_word;
+    sb_stemmer* stemmer = sb_stemmer_new(algorithm, charenc);
+    if (stemmer == nullptr) 
+        throw std::runtime_error("Error creating stemmer");
+        
+    std::string cleanedWord = cleanWord(term); 
+
+    const char* word = cleanedWord.c_str();
+    size_t wordLength = strlen(word);
+
+    // Стэмминг слова
+    const void* stemmedWord = sb_stemmer_stem(stemmer, reinterpret_cast<unsigned char*>(const_cast<char*>(word)), wordLength);
+    size_t stemmedLength = sb_stemmer_length(stemmer);
+
+    std::string result(reinterpret_cast<const char*>(stemmedWord), stemmedLength);
+    
+    sb_stemmer_delete(stemmer);
+
+    return result;
 
 }
 
@@ -535,20 +565,20 @@ void InvertedIndex::log_document(const std::string& file_name, int doc_id) const
 {
     std::cout << std::left 
               << "| " << std::setw(6) << doc_id 
-              << " | " << std::setw(60) << file_name
+              << " | " << std::setw(80) << file_name
               << " | " << std::setw(9) << m_index.size() << " |" << std::endl;
 }
 
 void InvertedIndex::log_top_table() const noexcept
 {
-    std::cout << "+--------+--------------------------------------------------------------+-----------+" << std::endl;
-    std::cout << "| docID  | file                                                         | indexsize |" << std::endl;
-    std::cout << "+--------+--------------------------------------------------------------+-----------+" << std::endl;
+    std::cout << "+--------+----------------------------------------------------------------------------------+-----------+" << std::endl;
+    std::cout << "| docID  | file                                                                             | indexsize |" << std::endl;
+    std::cout << "+--------+----------------------------------------------------------------------------------+-----------+" << std::endl;
 }
  
 void InvertedIndex::log_bottom_table() const noexcept
 {
-    std::cout << "+--------+--------------------------------------------------------------+-----------+" << std::endl;
+    std::cout << "+--------+----------------------------------------------------------------------------------+-----------+" << std::endl;
 }
 
 int InvertedIndex::count_character(const std::string &str, char ch) const noexcept
