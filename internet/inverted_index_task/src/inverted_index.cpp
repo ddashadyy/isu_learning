@@ -180,7 +180,6 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
 {
     if (index_type == "web_page")
     {
-        int counter = 0;
         log_top_table();
 
         // Исключаем повторную индексацию 
@@ -194,7 +193,6 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
             return;
         }
 
-        int doc_id = m_documents.size(); 
         m_documents.push_back(folder); 
 
         std::string line{};
@@ -212,7 +210,6 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
     {
         namespace fs = std::filesystem;
 
-        int counter = 0;
         log_top_table();
 
         const fs::path dir(folder);
@@ -233,7 +230,6 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
                     indexHTML(key); 
 
                 // log_document(key, counter);
-                counter++;
             }
         }
 
@@ -581,13 +577,3 @@ void InvertedIndex::log_bottom_table() const noexcept
     std::cout << "+--------+----------------------------------------------------------------------------------+-----------+" << std::endl;
 }
 
-int InvertedIndex::count_character(const std::string &str, char ch) const noexcept
-{
-    int count = 0;
-    for (char c : str) {
-        if (c == ch) {
-            count++;
-        }
-    }
-    return count;
-}

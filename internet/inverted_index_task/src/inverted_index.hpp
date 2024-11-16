@@ -46,8 +46,6 @@ private:
     void log_top_table() const noexcept;
     void log_bottom_table() const noexcept;
 
-    int count_character(const std::string& str, char ch) const noexcept;
-
     void extract_text(GumboNode* node, std::string& output);
     static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
     std::vector<std::string> splitString(std::string& line) noexcept;
