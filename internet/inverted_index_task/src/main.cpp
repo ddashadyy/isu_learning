@@ -8,7 +8,6 @@
 #include "web_crawler.hpp"
 #include <libstemmer.h>
 
-
 std::ostream& operator << (std::ostream& os, const std::list<int>& lst)
 {
     os.put('[');
@@ -20,55 +19,14 @@ std::ostream& operator << (std::ostream& os, const std::list<int>& lst)
     return os;
 }
 
-
-// Функция для удаления неалфавитных символов
-// std::string cleanWord(const std::string& word) {
-//     std::string cleaned;
-//     for (char c : word) {
-//         if (std::isalpha(c)) { // Проверяем, является ли символ буквой
-//             cleaned += std::tolower(c); // Приводим к нижнему регистру
-//         }
-//     }
-//     return cleaned;
-// }
-
 int main() 
 {
-    // // WebCrawler wc("https://github.com/", 2);
-    // // wc.crawl();
-
-    // try
-	// {
-	// 	auto deserializedInvertedIndexPtr = std::make_unique<InvertedIndex>(InvertedIndex::readFromDisk("/home/gennadiy/third_course/internet/inverted_index_task/serialized"));
-
-	// 	deserializedInvertedIndexPtr->indexCollection("/home/gennadiy/collection");
-	// 	deserializedInvertedIndexPtr->serialize("/home/gennadiy/third_course/internet/inverted_index_task/serialized");
-		
-	// 	// deserializedInvertedIndexPtr->indexDocument("/home/gennadiy/collection/The_Life_and_Death_of_Julies_Caesar.txt");
-
-	// 	std::cout << "Calpurnia's " << deserializedInvertedIndexPtr->executeQuery("Calpurnia's") << std::endl;
-	// 	std::cout << "Brutus's " << deserializedInvertedIndexPtr->executeQuery("Brutus's") << std::endl;
-	// 	std::cout << "Caesar's " << deserializedInvertedIndexPtr->executeQuery("Caesar's") << std::endl;
-	// 	std::cout << "Romeo's " << deserializedInvertedIndexPtr->executeQuery("Romeo's") << std::endl;
-	// 	std::cout << "Hamlet's " << deserializedInvertedIndexPtr->executeQuery("Hamlet's") << std::endl;
-
-    //     std::cout << "Brutus OR Calpurnia " << deserializedInvertedIndexPtr->executeQuery("Brutus OR Calpurnia") << std::endl;
-    //     std::cout << "Caesar OR Romeo OR Hamlet " << deserializedInvertedIndexPtr->executeQuery("Caesar OR Romeo OR Hamlet") << std::endl;
-    //     std::cout << "( Brutus OR Calpurnia ) AND ( Caesar OR Romeo OR Hamlet ) " << deserializedInvertedIndexPtr->executeQuery("( Brutus OR Calpurnia ) AND ( Caesar OR Romeo OR Hamlet )") << std::endl;
-
-	// }
-	// catch (const std::ios_base::failure& e)
-	// {
-	// 	std::cerr << e.what() << '\n';
-	// }
-
-	//  /home/gennadiy/stop_words.txt
-
 	InvertedIndex ii("/home/gennadiy/stop_words.txt");
 	// InvertedIndex ii;
 	ii.indexCollection("/home/gennadiy/collection");
 
-	// 4 простых, в том числе запрос, содержащий стоп-слово, и запросы с различными формами одного слова
+	// ii.indexCollection("/home/gennadiy/collection_html", "html");
+	
 	std::cout << "4 simple\n";
 	std::cout << "was " << ii.executeQuery("was") << std::endl;
 	std::cout << "Calpurnia's " << ii.executeQuery("Calpurnia's") << std::endl;
@@ -90,6 +48,14 @@ int main()
 	std::cout << "Caesar OR them " << ii.executeQuery("Caesar OR them") << std::endl;
 	std::cout << std::endl;
 
+	std::list<int> l1 = {1,2,3,4};
+	std::list<int> l2 = {};
+
+	std::list<int> result;
+
+	std::set_intersection(l1.begin(), l1.end(), l2.begin(), l2.end(), std::back_inserter(result));
+
+	std::cout << result << std::endl;
     
 
 

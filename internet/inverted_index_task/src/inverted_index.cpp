@@ -200,8 +200,6 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
         {
             std::istringstream iss(line);
             indexHTMLByLink(iss.str());
-
-            // log_document(iss.str(), counter);
         }
         log_bottom_table();
     }
@@ -228,8 +226,6 @@ void InvertedIndex::indexCollection(const std::string& folder, const std::string
                     indexDocument(key);
                 else if (index_type == "html")
                     indexHTML(key); 
-
-                // log_document(key, counter);
             }
         }
 
@@ -307,7 +303,7 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
             operators.push(token);
         else 
             if (m_stop_words.find(token) == m_stop_words.end())
-                operands.push(m_index.at(token));
+                operands.push(m_index[token]);
             else 
                 operands.push(std::list<int>{});
     }
@@ -450,6 +446,8 @@ std::list<int> InvertedIndex::get_intersection(const std::list<int>& l1, const s
         else ++it2;
     }
 
+    // std::set_intersection(l1.begin(), l1.end(), l2.begin(), l2.end(), std::back_inserter(result_of_intersection));
+
     return result_of_intersection;
 }
 
@@ -503,7 +501,7 @@ void InvertedIndex::processLogicalOperators(std::stack<std::string>& operators, 
 
     auto second_operand = operands.top(); operands.pop();
     auto first_operand = operands.top(); operands.pop();
-    
+
     if (op == "and")
         operands.push(get_intersection(first_operand, second_operand));
     else if (op == "or")
@@ -517,7 +515,7 @@ std::string InvertedIndex::normalize(const std::string& term) const
     {
         std::string cleaned;
         std::copy_if(word.begin(), word.end(), std::back_inserter(cleaned),
-                     [](char c) { return c != '!' && c != '?' && c != '.' && c != ','; }); 
+                     [](char c) { return isalnum(c); }); 
         std::transform(cleaned.begin(), cleaned.end(), cleaned.begin(), 
                        [](unsigned char c) { return std::tolower(c); }); 
         return cleaned;
