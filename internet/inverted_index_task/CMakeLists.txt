@@ -5,7 +5,7 @@ project(inverted_index)
 set(CMAKE_CXX_STANDARD 20)            
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
-set(CMAKE_CXX_COMPILER "/usr/bin/clang++")
+set(CMAKE_CXX_COMPILER /usr/bin/clang++)
 
 set(SOURCE_FILES src/main.cpp src/inverted_index.cpp src/web_crawler.cpp)
 set(HEADER_FILES src/inverted_index.hpp src/serialization.hpp src/web_crawler)
