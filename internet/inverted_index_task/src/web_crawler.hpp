@@ -34,6 +34,7 @@ class WebCrawler : public InvertedIndex
 {
 public:
     WebCrawler(const std::string& startUrl, int maxDepth) : startUrl(startUrl), maxDepth(maxDepth) {}
+    ~WebCrawler() {}
     void crawl();
 
 private:
