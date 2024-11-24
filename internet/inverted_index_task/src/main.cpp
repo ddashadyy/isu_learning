@@ -1,12 +1,6 @@
 #include <iostream>
-#include <string>
-#include <cstring>
-#include <curl/curl.h>
-#include <gumbo.h>
-#include <memory>
 #include "inverted_index.hpp"
 #include "web_crawler.hpp"
-#include <libstemmer.h>
 
 std::ostream& operator << (std::ostream& os, const std::list<int>& lst)
 {
@@ -21,10 +15,10 @@ std::ostream& operator << (std::ostream& os, const std::list<int>& lst)
 
 int main() 
 {
-	InvertedIndex ii("/home/gennadiy/stop_words.txt");
-	// InvertedIndex ii;
-	ii.indexCollection("/home/gennadiy/collection");
+	// InvertedIndex ii("/home/gennadiy/stop_words.txt");
+	InvertedIndex ii;
 
+	ii.indexCollection("/home/gennadiy/collection");
 	// ii.indexCollection("/home/gennadiy/collection_html", "html");
 	
 	std::cout << "4 simple\n";
@@ -48,17 +42,8 @@ int main()
 	std::cout << "Caesar OR them " << ii.executeQuery("Caesar OR them") << std::endl;
 	std::cout << std::endl;
 
-	std::list<int> l1 = {1,2,3,4};
-	std::list<int> l2 = {};
-
-	std::list<int> result;
-
-	std::set_intersection(l1.begin(), l1.end(), l2.begin(), l2.end(), std::back_inserter(result));
-
-	std::cout << result << std::endl;
-    
-
-
+	// WebCrawler wc("https://github.com/", 2);
+	// wc.crawl();
 
 
     return EXIT_SUCCESS;
