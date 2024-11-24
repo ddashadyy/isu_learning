@@ -305,7 +305,7 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
             if (m_stop_words.find(token) == m_stop_words.end())
                 operands.push(m_index[token]);
             else 
-                operands.push(std::list<int>{});
+                operands.push(std::list<int>{-1});
     }
 
     while (!operators.empty()) 
@@ -313,6 +313,8 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
     
     result = operands.top();
     operands.pop();
+
+    if (result == std::list<int>{-1}) result.clear();
 
     return result;
 }
@@ -496,17 +498,31 @@ std::list<int> InvertedIndex::get_union(const std::list<int>& l1, const std::lis
 
 void InvertedIndex::processLogicalOperators(std::stack<std::string>& operators, std::stack<std::list<int>>& operands) noexcept
 {
-    std::string op = operators.top();
-    operators.pop();
+    auto detected = std::list<int>{-1};
 
+    auto op = operators.top(); operators.pop();
     auto second_operand = operands.top(); operands.pop();
     auto first_operand = operands.top(); operands.pop();
 
     if (op == "and")
-        operands.push(get_intersection(first_operand, second_operand));
-    else if (op == "or")
-        operands.push(get_union(first_operand, second_operand));
+    {
+        if (second_operand == detected)
+            operands.push(first_operand);
+        else if (first_operand == detected)
+            operands.push(second_operand);            
+        else 
+            operands.push(get_intersection(first_operand, second_operand));
+    }
 
+    else if (op == "or")
+    {
+        if (second_operand == detected)
+            operands.push(first_operand);
+        else if (first_operand == detected)
+            operands.push(second_operand);
+        else
+            operands.push(get_union(first_operand, second_operand));
+    }
 }
 
 std::string InvertedIndex::normalize(const std::string& term) const 
