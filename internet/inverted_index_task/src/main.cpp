@@ -18,8 +18,8 @@ int main()
 	// InvertedIndex ii("/home/gennadiy/stop_words.txt");
 	InvertedIndex ii;
 
-	ii.indexCollection("/home/gennadiy/collection");
-	// ii.indexCollection("/home/gennadiy/collection_html", "html");
+	// ii.indexCollection("/home/gennadiy/collection");
+	ii.indexCollection("/home/gennadiy/collection_html", "html");
 	
 	std::cout << "4 simple\n";
 	std::cout << "was " << ii.executeQuery("was") << std::endl;
