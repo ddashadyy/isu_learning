@@ -27,9 +27,6 @@ public:
     virtual ~InvertedIndex() { curl_global_cleanup(); };
 
     void indexDocument( const std::string& path );
-    // void indexHTML( const std::string& html );
-    // void indexHTMLByLink( const std::string& url );
-
     void indexCollection( const std::string& folder );
 
     std::list<int> executeQuery( const std::string& query );
@@ -60,6 +57,9 @@ private:
     std::list<std::string> m_documents{};
     std::unordered_map<std::string, std::list<int>> m_index{};     
     std::unordered_set<std::string> m_stop_words{};
+
+protected:
+    std::string connect_by_url( const std::string& url );
 };
 
 
