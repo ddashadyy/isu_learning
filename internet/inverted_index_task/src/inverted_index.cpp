@@ -46,192 +46,252 @@ InvertedIndex::InvertedIndex(InvertedIndex&& other)
 
 void InvertedIndex::indexDocument(const std::string& path)
 {
-    // Исключаем повторную индексацию 
     auto find_it = std::find(m_documents.begin(), m_documents.end(), path);
     if (find_it != m_documents.end()) return;
 
-    std::ifstream file(path);
-    if (!file.is_open()) 
-    {
-        throw std::ios_base::failure("Could not open the file");
-        return;
-    }
-
-    int doc_id = m_documents.size(); 
-    m_documents.push_back(path); 
-
-    std::string line{};
-    while (std::getline(file, line)) 
-    {
-        std::istringstream iss(line);
-        std::string word{};
-
-        while (iss >> word) 
+    auto document_type = get_mime_type_of_document(path);
+    auto make_file = [](const std::string& path, const MimeType& mime_type) {
+        if (mime_type == MimeType::TEXT || mime_type == MimeType::HTML)
         {
-            word = normalize(word);
-            if (m_stop_words.find(word) == m_stop_words.end())
-                if (!word.empty()) 
-                    add_word_to_index(word, doc_id);   
+            std::ifstream file(path);
+            if (!file.is_open()) 
+            {
+                std::cerr << "Could not open the file\n";
+                exit(1);
+            }
+            return file;
         }
-    }
-    file.close();
-    
-    log_document(path, doc_id);
-}
+    };
 
-void InvertedIndex::indexHTML(const std::string& html)
-{
-    // Исключаем повторную индексацию 
-    auto find_it = std::find(m_documents.begin(), m_documents.end(), html);
-    if (find_it != m_documents.end()) return;
+    auto normalize_and_write_to_index = [&](const std::vector<std::string>& words, int doc_id) {
+        std::for_each(words.begin(), words.end(), [&](const std::string& word) {
+            std::string normalized_word = normalize(word); 
+            if (m_stop_words.find(normalized_word) == m_stop_words.end())
+                if (!normalized_word.empty()) 
+                    add_word_to_index(normalized_word, doc_id);
+            }
+        );
+    };
 
+    int doc_id;
 
-    std::ifstream html_file(html);
-    if (!html_file.is_open())
+    if (document_type == MimeType::TEXT)
     {
-        throw std::ios_base::failure("Could not open the file");
-    }
-
-    int doc_id = m_documents.size();
-    m_documents.push_back(html);
-
-    std::stringstream buffer;
-    buffer << html_file.rdbuf();
-
-    html_file.close();
-    
-    std::string raw_html = buffer.str();
-    
-    GumboOutput* output = gumbo_parse(raw_html.c_str());
-    std::string extracted_text;
-    
-    extract_text(output->root, extracted_text);
-    gumbo_destroy_output(&kGumboDefaultOptions, output);
-
-    auto splitted_string = splitString(extracted_text);
-
-    for (auto& word : splitted_string)
-    {
-        word = normalize(word);
-        if (m_stop_words.find(word) == m_stop_words.end())
-            if (!word.empty()) 
-                add_word_to_index(word, doc_id);
-    }
-
-    log_document(html, doc_id);
-    
-}
-
-void InvertedIndex::indexHTMLByLink(const std::string& url)
-{
-    // Исключаем повторную индексацию 
-    auto find_it = std::find(m_documents.begin(), m_documents.end(), url);
-    if (find_it != m_documents.end()) return;
-
-    int doc_id = m_documents.size();
-    m_documents.push_back(url);
-
-    CURL* curl;
-    CURLcode res;
-    std::string readBuffer;
-
-    curl = curl_easy_init();
-
-    if (curl)
-    {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str()); 
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-
-        if(res != CURLE_OK) 
-        {
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-            return;
-        }
-    }
-
-    GumboOutput* output = gumbo_parse(readBuffer.c_str());
-    if (!output) 
-    {
-        std::cerr << "Failed to parse HTML." << std::endl;
-        return;
-    }
-
-    std::string extracted_text;
-
-    extract_text(output->root, extracted_text);
-    gumbo_destroy_output(&kGumboDefaultOptions, output);
-
-    auto splitted_string = splitString(extracted_text);
-    
-    for (auto& word : splitted_string)
-    {
-        word = normalize(word);
-        if (m_stop_words.find(word) == m_stop_words.end())
-            if (!word.empty()) 
-                add_word_to_index(word, doc_id);
-    }
-    log_document(url, doc_id);
-}
-
-void InvertedIndex::indexCollection(const std::string& folder, const std::string& index_type)
-{
-    if (index_type == "web_page")
-    {
-        log_top_table();
-
-        // Исключаем повторную индексацию 
-        auto find_it = std::find(m_documents.begin(), m_documents.end(), folder);
-        if (find_it != m_documents.end()) return;
-
-        std::ifstream file(folder);
-        if (!file.is_open()) 
-        {
-            throw std::ios_base::failure("Could not open the file");
-            return;
-        }
-
-        m_documents.push_back(folder); 
+        auto file = make_file(path, document_type);
+        doc_id = m_documents.size();
+        m_documents.push_back(path);
 
         std::string line{};
         while (std::getline(file, line)) 
         {
             std::istringstream iss(line);
-            indexHTMLByLink(iss.str());
-        }
-        log_bottom_table();
-    }
-                
-    else 
-    {
-        namespace fs = std::filesystem;
+            std::string word{};
 
-        log_top_table();
-
-        const fs::path dir(folder);
-        if (!fs::exists(dir)) return; 
-
-        for (const auto& entry : fs::directory_iterator(dir)) 
-        {
-            // recursive traversal
-            if (fs::is_directory(entry)) indexCollection(entry.path().string(), index_type);
-
-            if (fs::is_regular_file(entry.status())) 
+            while (iss >> word) 
             {
-                const std::string key = entry.path().string();
-                
-                if (index_type == "document")
-                    indexDocument(key);
-                else if (index_type == "html")
-                    indexHTML(key); 
+                word = normalize(word);
+                if (m_stop_words.find(word) == m_stop_words.end())
+                    if (!word.empty()) 
+                        add_word_to_index(word, doc_id);   
+            }
+        }
+        file.close();
+    }
+
+    else if (document_type == MimeType::HTML)
+    {
+        auto html_file = make_file(path, document_type);
+
+        doc_id = m_documents.size();
+        m_documents.push_back(path);
+
+        std::stringstream buffer;
+        buffer << html_file.rdbuf();
+
+        html_file.close();
+        
+        std::string raw_html = buffer.str();
+        
+        GumboOutput* output = gumbo_parse(raw_html.c_str());
+        std::string extracted_text;
+        
+        extract_text(output->root, extracted_text);
+        gumbo_destroy_output(&kGumboDefaultOptions, output);
+
+        auto splitted_string = splitString(extracted_text);
+        normalize_and_write_to_index(splitted_string, doc_id);
+    }
+
+    else if (document_type == MimeType::WEB)
+    {
+        doc_id = m_documents.size();
+        m_documents.push_back(path);
+
+        int doc_id = m_documents.size();
+        m_documents.push_back(path);
+
+        CURL* curl;
+        CURLcode res;
+        std::string readBuffer;
+
+        curl = curl_easy_init();
+
+        if (curl)
+        {
+            curl_easy_setopt(curl, CURLOPT_URL, path.c_str()); 
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+            res = curl_easy_perform(curl);
+            curl_easy_cleanup(curl);
+
+            if(res != CURLE_OK) 
+            {
+                std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+                return;
             }
         }
 
-        log_bottom_table();
+        GumboOutput* output = gumbo_parse(readBuffer.c_str());
+        if (!output) 
+        {
+            std::cerr << "Failed to parse HTML." << std::endl;
+            return;
+        }
+
+        std::string extracted_text;
+
+        extract_text(output->root, extracted_text);
+        gumbo_destroy_output(&kGumboDefaultOptions, output);
+
+        auto splitted_string = splitString(extracted_text);
+        normalize_and_write_to_index(splitted_string, doc_id);
     }
 
+    doc_id = 0;
+    log_document(path, doc_id);
+
+}
+
+// void InvertedIndex::indexHTML(const std::string& html)
+// {
+//     // Исключаем повторную индексацию 
+//     auto find_it = std::find(m_documents.begin(), m_documents.end(), html);
+//     if (find_it != m_documents.end()) return;
+
+
+//     std::ifstream html_file(html);
+//     if (!html_file.is_open())
+//     {
+//         std::cerr << "Could not open the file\n";
+//         return;
+//     }
+
+//     int doc_id = m_documents.size();
+//     m_documents.push_back(html);
+
+//     std::stringstream buffer;
+//     buffer << html_file.rdbuf();
+
+//     html_file.close();
+    
+//     std::string raw_html = buffer.str();
+    
+//     GumboOutput* output = gumbo_parse(raw_html.c_str());
+//     std::string extracted_text;
+    
+//     extract_text(output->root, extracted_text);
+//     gumbo_destroy_output(&kGumboDefaultOptions, output);
+
+//     auto splitted_string = splitString(extracted_text);
+
+//     for (auto& word : splitted_string)
+//     {
+//         word = normalize(word);
+//         if (m_stop_words.find(word) == m_stop_words.end())
+//             if (!word.empty()) 
+//                 add_word_to_index(word, doc_id);
+//     }
+
+//     log_document(html, doc_id);
+    
+// }
+
+// void InvertedIndex::indexHTMLByLink(const std::string& url)
+// {
+//     // Исключаем повторную индексацию 
+//     auto find_it = std::find(m_documents.begin(), m_documents.end(), url);
+//     if (find_it != m_documents.end()) return;
+
+//     int doc_id = m_documents.size();
+//     m_documents.push_back(url);
+
+//     CURL* curl;
+//     CURLcode res;
+//     std::string readBuffer;
+
+//     curl = curl_easy_init();
+
+//     if (curl)
+//     {
+//         curl_easy_setopt(curl, CURLOPT_URL, url.c_str()); 
+//         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+//         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
+//         res = curl_easy_perform(curl);
+//         curl_easy_cleanup(curl);
+
+//         if(res != CURLE_OK) 
+//         {
+//             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+//             return;
+//         }
+//     }
+
+//     GumboOutput* output = gumbo_parse(readBuffer.c_str());
+//     if (!output) 
+//     {
+//         std::cerr << "Failed to parse HTML." << std::endl;
+//         return;
+//     }
+
+//     std::string extracted_text;
+
+//     extract_text(output->root, extracted_text);
+//     gumbo_destroy_output(&kGumboDefaultOptions, output);
+
+//     auto splitted_string = splitString(extracted_text);
+    
+//     for (auto& word : splitted_string)
+//     {
+//         word = normalize(word);
+//         if (m_stop_words.find(word) == m_stop_words.end())
+//             if (!word.empty()) 
+//                 add_word_to_index(word, doc_id);
+//     }
+//     log_document(url, doc_id);
+// }
+
+void InvertedIndex::indexCollection(const std::string& folder)
+{
+    namespace fs = std::filesystem;
+
+    log_top_table();
+
+    const fs::path dir(folder);
+    if (!fs::exists(dir)) return; 
+
+    for (const auto& entry : fs::directory_iterator(dir)) 
+    {
+        // recursive traversal
+        if (fs::is_directory(entry)) indexCollection(entry.path().string());
+        if (fs::is_regular_file(entry.status())) 
+        {
+            const std::string key = entry.path().string();
+            indexDocument(key);
+        }
+    }
+
+    log_bottom_table();
+    
 }
 
 void InvertedIndex::extract_text(GumboNode* node, std::string& output)
@@ -296,7 +356,7 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
         else if (token == ")") 
         {
             while (!operators.empty() && operators.top() != "(") 
-                processLogicalOperators(operators, operands);
+                proces_logical_operators(operators, operands);
             operators.pop(); 
         } 
         else if (token == "and" || token == "or") 
@@ -309,7 +369,7 @@ std::list<int> InvertedIndex::executeQuery(const std::string& query)
     }
 
     while (!operators.empty()) 
-        processLogicalOperators(operators, operands);
+        proces_logical_operators(operators, operands);
     
     result = operands.top();
     operands.pop();
@@ -496,7 +556,14 @@ std::list<int> InvertedIndex::get_union(const std::list<int>& l1, const std::lis
     return result_of_union;
 }
 
-void InvertedIndex::processLogicalOperators(std::stack<std::string>& operators, std::stack<std::list<int>>& operands) noexcept
+MimeType InvertedIndex::get_mime_type_of_document(const std::string& file_name) const noexcept
+{
+    if (file_name.starts_with("http://") || file_name.starts_with("https://")) return MimeType::WEB;
+    else if (file_name.ends_with(".htm") || file_name.ends_with(".html")) return MimeType::HTML;
+    else if  (file_name.ends_with(".txt"))  return MimeType::TEXT;
+}
+
+void InvertedIndex::proces_logical_operators(std::stack<std::string>& operators, std::stack<std::list<int>>& operands) noexcept
 {
     auto detected = std::list<int>{-1};
 

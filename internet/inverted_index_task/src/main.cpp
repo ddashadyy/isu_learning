@@ -19,8 +19,10 @@ int main()
 	InvertedIndex ii;
 
 	// ii.indexCollection("/home/gennadiy/collection");
-	ii.indexCollection("/home/gennadiy/collection_html", "html");
+	ii.indexCollection("/home/gennadiy/collection_html");
 	
+	// ii.indexDocument("https://github.com");
+
 	std::cout << "4 simple\n";
 	std::cout << "was " << ii.executeQuery("was") << std::endl;
 	std::cout << "Calpurnia's " << ii.executeQuery("Calpurnia's") << std::endl;

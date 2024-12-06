@@ -73,7 +73,7 @@ void WebCrawler::crawlHelper(const std::string& url, int depth, std::set<std::st
     {
         std::string absoluteLink = resolveUrl(url, link); 
 
-        indexHTMLByLink(absoluteLink);
+        indexDocument(absoluteLink);
         crawlHelper(absoluteLink, depth - 1, visited); 
     }
 }
