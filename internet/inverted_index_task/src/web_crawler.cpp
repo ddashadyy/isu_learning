@@ -31,14 +31,8 @@ void WebCrawler::searchForLinks(GumboNode* node, std::set<std::string>& links)
 std::string WebCrawler::resolveUrl(const std::string& baseUrl, const std::string& relativeUrl)
 {
     if (relativeUrl.empty()) return "";
-
-    if (relativeUrl[0] == '/') 
-        // Относительная ссылка начинается с /
-        return baseUrl.substr(0, baseUrl.find("/", 8)) + relativeUrl;
-    
-    if (relativeUrl.substr(0, 4) == "http") 
-        // Это абсолютный URL
-        return relativeUrl;
+    if (relativeUrl[0] == '/') return baseUrl.substr(0, baseUrl.find("/", 8)) + relativeUrl;
+    if (relativeUrl.substr(0, 4) == "http") return relativeUrl;
     
     return baseUrl + relativeUrl;
 }
@@ -48,24 +42,11 @@ void WebCrawler::crawlHelper(const std::string& url, int depth, std::set<std::st
     if (depth == 0 || visited.count(url) > 0) return;
     
     visited.insert(url);
-    std::string pageContent;
-
-    CURL* curl = curl_easy_init();
-    if (curl) 
-    {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &pageContent);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-
-        CURLcode res = curl_easy_perform(curl);
-        if (res != CURLE_OK) 
-            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-        curl_easy_cleanup(curl);
-    }
+    std::string pageContent = connect_by_url(url);
 
     GumboOutput* output = gumbo_parse(pageContent.c_str());
     std::set<std::string> links;
+
     searchForLinks(output->root, links);
     gumbo_destroy_output(&kGumboDefaultOptions, output);
 
