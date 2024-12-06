@@ -50,17 +50,18 @@ void InvertedIndex::indexDocument(const std::string& path)
     if (find_it != m_documents.end()) return;
 
     auto document_type = get_mime_type_of_document(path);
+
     auto make_file = [](const std::string& path, const MimeType& mime_type) {
+        std::ifstream file;
         if (mime_type == MimeType::TEXT || mime_type == MimeType::HTML)
         {
-            std::ifstream file(path);
+            file.open(path);
             if (!file.is_open()) 
             {
                 std::cerr << "Could not open the file\n";
-                exit(1);
             }
-            return file;
         }
+        return file;
     };
 
     auto normalize_and_write_to_index = [&](const std::vector<std::string>& words, int doc_id) {
@@ -73,7 +74,17 @@ void InvertedIndex::indexDocument(const std::string& path)
         );
     };
 
-    int doc_id;
+    auto index_hmtl = [&](const char* buffer) {
+        GumboOutput* output = gumbo_parse(buffer);
+        std::string extracted_text;
+        
+        extract_text(output->root, extracted_text);
+        gumbo_destroy_output(&kGumboDefaultOptions, output);
+
+        return extracted_text;
+    };
+
+    int doc_id = 0;
 
     if (document_type == MimeType::TEXT)
     {
@@ -109,14 +120,8 @@ void InvertedIndex::indexDocument(const std::string& path)
         buffer << html_file.rdbuf();
 
         html_file.close();
-        
-        std::string raw_html = buffer.str();
-        
-        GumboOutput* output = gumbo_parse(raw_html.c_str());
-        std::string extracted_text;
-        
-        extract_text(output->root, extracted_text);
-        gumbo_destroy_output(&kGumboDefaultOptions, output);
+    
+        std::string extracted_text = index_hmtl(buffer.str().c_str());
 
         auto splitted_string = splitString(extracted_text);
         normalize_and_write_to_index(splitted_string, doc_id);
@@ -130,145 +135,17 @@ void InvertedIndex::indexDocument(const std::string& path)
         int doc_id = m_documents.size();
         m_documents.push_back(path);
 
-        CURL* curl;
-        CURLcode res;
-        std::string readBuffer;
+        std::string read_buffer = connect_by_url(path);
+        if (read_buffer.empty()) return;
 
-        curl = curl_easy_init();
-
-        if (curl)
-        {
-            curl_easy_setopt(curl, CURLOPT_URL, path.c_str()); 
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-            res = curl_easy_perform(curl);
-            curl_easy_cleanup(curl);
-
-            if(res != CURLE_OK) 
-            {
-                std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-                return;
-            }
-        }
-
-        GumboOutput* output = gumbo_parse(readBuffer.c_str());
-        if (!output) 
-        {
-            std::cerr << "Failed to parse HTML." << std::endl;
-            return;
-        }
-
-        std::string extracted_text;
-
-        extract_text(output->root, extracted_text);
-        gumbo_destroy_output(&kGumboDefaultOptions, output);
+        std::string extracted_text = index_hmtl(read_buffer.c_str());
 
         auto splitted_string = splitString(extracted_text);
         normalize_and_write_to_index(splitted_string, doc_id);
     }
 
-    doc_id = 0;
     log_document(path, doc_id);
-
 }
-
-// void InvertedIndex::indexHTML(const std::string& html)
-// {
-//     // Исключаем повторную индексацию 
-//     auto find_it = std::find(m_documents.begin(), m_documents.end(), html);
-//     if (find_it != m_documents.end()) return;
-
-
-//     std::ifstream html_file(html);
-//     if (!html_file.is_open())
-//     {
-//         std::cerr << "Could not open the file\n";
-//         return;
-//     }
-
-//     int doc_id = m_documents.size();
-//     m_documents.push_back(html);
-
-//     std::stringstream buffer;
-//     buffer << html_file.rdbuf();
-
-//     html_file.close();
-    
-//     std::string raw_html = buffer.str();
-    
-//     GumboOutput* output = gumbo_parse(raw_html.c_str());
-//     std::string extracted_text;
-    
-//     extract_text(output->root, extracted_text);
-//     gumbo_destroy_output(&kGumboDefaultOptions, output);
-
-//     auto splitted_string = splitString(extracted_text);
-
-//     for (auto& word : splitted_string)
-//     {
-//         word = normalize(word);
-//         if (m_stop_words.find(word) == m_stop_words.end())
-//             if (!word.empty()) 
-//                 add_word_to_index(word, doc_id);
-//     }
-
-//     log_document(html, doc_id);
-    
-// }
-
-// void InvertedIndex::indexHTMLByLink(const std::string& url)
-// {
-//     // Исключаем повторную индексацию 
-//     auto find_it = std::find(m_documents.begin(), m_documents.end(), url);
-//     if (find_it != m_documents.end()) return;
-
-//     int doc_id = m_documents.size();
-//     m_documents.push_back(url);
-
-//     CURL* curl;
-//     CURLcode res;
-//     std::string readBuffer;
-
-//     curl = curl_easy_init();
-
-//     if (curl)
-//     {
-//         curl_easy_setopt(curl, CURLOPT_URL, url.c_str()); 
-//         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-//         curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-//         res = curl_easy_perform(curl);
-//         curl_easy_cleanup(curl);
-
-//         if(res != CURLE_OK) 
-//         {
-//             std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
-//             return;
-//         }
-//     }
-
-//     GumboOutput* output = gumbo_parse(readBuffer.c_str());
-//     if (!output) 
-//     {
-//         std::cerr << "Failed to parse HTML." << std::endl;
-//         return;
-//     }
-
-//     std::string extracted_text;
-
-//     extract_text(output->root, extracted_text);
-//     gumbo_destroy_output(&kGumboDefaultOptions, output);
-
-//     auto splitted_string = splitString(extracted_text);
-    
-//     for (auto& word : splitted_string)
-//     {
-//         word = normalize(word);
-//         if (m_stop_words.find(word) == m_stop_words.end())
-//             if (!word.empty()) 
-//                 add_word_to_index(word, doc_id);
-//     }
-//     log_document(url, doc_id);
-// }
 
 void InvertedIndex::indexCollection(const std::string& folder)
 {
@@ -316,7 +193,6 @@ void InvertedIndex::extract_text(GumboNode* node, std::string& output)
     } 
 }
 
-// Функция для обработки данных, полученных через curl
 size_t InvertedIndex::WriteCallback(void* contents, size_t size, size_t nmemb, std::string* userp)
 {
     size_t totalSize = size * nmemb;
@@ -563,6 +439,29 @@ MimeType InvertedIndex::get_mime_type_of_document(const std::string& file_name) 
     else if  (file_name.ends_with(".txt"))  return MimeType::TEXT;
 }
 
+std::string InvertedIndex::connect_by_url(const std::string& url)
+{
+    CURL* curl;
+    CURLcode res;
+    std::string read_buffer;
+
+    curl = curl_easy_init();
+
+    if (curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_URL, url.c_str()); 
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &read_buffer);
+        res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        if(res != CURLE_OK) 
+            std::cerr << "curl_easy_perform() failed: " << curl_easy_strerror(res) << std::endl;
+    }
+    
+    return read_buffer;
+}
+
 void InvertedIndex::proces_logical_operators(std::stack<std::string>& operators, std::stack<std::list<int>>& operands) noexcept
 {
     auto detected = std::list<int>{-1};
@@ -625,7 +524,6 @@ std::string InvertedIndex::normalize(const std::string& term) const
     sb_stemmer_delete(stemmer);
 
     return result;
-
 }
 
 void InvertedIndex::add_word_to_index(const std::string &word, int doc_id)
@@ -657,4 +555,3 @@ void InvertedIndex::log_bottom_table() const noexcept
 {
     std::cout << "+--------+----------------------------------------------------------------------------------+-----------+" << std::endl;
 }
-
