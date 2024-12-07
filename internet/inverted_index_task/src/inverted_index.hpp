@@ -2,6 +2,7 @@
 
 #include <list>
 #include <stack>
+#include <memory>
 #include <string>
 #include <vector>
 #include <gumbo.h>
@@ -9,6 +10,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "serialization.hpp"
+#include "term.hpp"
+#include "document_relevance.hpp"
 
 enum class MimeType 
 {
@@ -21,15 +24,14 @@ class InvertedIndex : IByteSerialize<InvertedIndex>
 {
 public:
     InvertedIndex() { curl_global_init(CURL_GLOBAL_DEFAULT); }
-    InvertedIndex(const std::string& stop_words_file_path);
     InvertedIndex( const InvertedIndex& other );
-    InvertedIndex( InvertedIndex&& other );
     virtual ~InvertedIndex() { curl_global_cleanup(); };
 
     void indexDocument( const std::string& path );
     void indexCollection( const std::string& folder );
 
-    std::list<int> executeQuery( const std::string& query );
+    std::list<std::shared_ptr<DocumentRelevance>> executeQuery( const std::string& query );
+    void intersect( std::list<std::shared_ptr<DocumentRelevance>>& answer, const std::shared_ptr<Term>& term );
     
     void serialize( const std::string& destination ) override;
     InvertedIndex& deserialize( const std::string& source ) override;
@@ -37,11 +39,7 @@ public:
     static InvertedIndex& readFromDisk(const std::string& file_name);
 
 private:
-    std::list<int> get_intersection( const std::list<int>& l1, const std::list<int>& l2 ) const noexcept;
-    std::list<int> get_union( const std::list<int>& l1, const std::list<int>& l2 ) const noexcept;
     MimeType get_mime_type_of_document( const std::string& file_name ) const noexcept;
-
-    void proces_logical_operators( std::stack<std::string>& operators, std::stack<std::list<int>>& operands ) noexcept;
 
     std::string normalize( const std::string& term ) const;
     void add_word_to_index( const std::string& word, int doc_id );
@@ -55,8 +53,7 @@ private:
     std::vector<std::string> splitString( std::string& line ) noexcept;
     
     std::list<std::string> m_documents{};
-    std::unordered_map<std::string, std::list<int>> m_index{};     
-    std::unordered_set<std::string> m_stop_words{};
+    std::unordered_map<std::string, std::shared_ptr<Term>> m_index{};     
 
 protected:
     std::string connect_by_url( const std::string& url );

@@ -15,11 +15,10 @@ std::ostream& operator << (std::ostream& os, const std::list<int>& lst)
 
 int main() 
 {
-	// InvertedIndex ii("/home/gennadiy/stop_words.txt");
 	InvertedIndex ii;
 
-	// ii.indexCollection("/home/gennadiy/collection");
-	ii.indexCollection("/home/gennadiy/collection_html");
+	ii.indexCollection("/home/gennadiy/collection");
+	// ii.indexCollection("/home/gennadiy/collection_html");
 	
 	// ii.indexDocument("https://github.com");
 

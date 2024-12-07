@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cctype>
 #include <vector>
 #include <cstring>
@@ -12,36 +13,11 @@
 #include <libstemmer.h>
 #include "inverted_index.hpp"
 
-InvertedIndex::InvertedIndex(const std::string& stop_words_file_path)
-{
-    std::ifstream stopWordsFile(stop_words_file_path);
-    if (!stopWordsFile.is_open()) 
-    {
-        std::cerr << "Ошибка открытия файла со стоп-словами: " << stop_words_file_path << std::endl;
-        return;
-    }
-
-    std::string word;
-    while (stopWordsFile >> word) 
-    {
-        word = normalize(word);
-        m_stop_words.insert(word);
-    }
-    stopWordsFile.close();
-}
-
 InvertedIndex::InvertedIndex(const InvertedIndex& other)
 {
     curl_global_init(CURL_GLOBAL_DEFAULT);
     m_documents = other.m_documents;
     m_index = other.m_index;
-}
-
-InvertedIndex::InvertedIndex(InvertedIndex&& other)
-{
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    m_documents = std::move(other.m_documents);
-    m_index = std::move(other.m_index);
 }
 
 void InvertedIndex::indexDocument(const std::string& path)
@@ -67,9 +43,8 @@ void InvertedIndex::indexDocument(const std::string& path)
     auto normalize_and_write_to_index = [&](const std::vector<std::string>& words, int doc_id) {
         std::for_each(words.begin(), words.end(), [&](const std::string& word) {
             std::string normalized_word = normalize(word); 
-            if (m_stop_words.find(normalized_word) == m_stop_words.end())
-                if (!normalized_word.empty()) 
-                    add_word_to_index(normalized_word, doc_id);
+            if (!normalized_word.empty()) 
+                add_word_to_index(normalized_word, doc_id);
             }
         );
     };
@@ -101,9 +76,8 @@ void InvertedIndex::indexDocument(const std::string& path)
             while (iss >> word) 
             {
                 word = normalize(word);
-                if (m_stop_words.find(word) == m_stop_words.end())
-                    if (!word.empty()) 
-                        add_word_to_index(word, doc_id);   
+                if (!word.empty()) 
+                    add_word_to_index(word, doc_id);   
             }
         }
         file.close();
@@ -171,6 +145,45 @@ void InvertedIndex::indexCollection(const std::string& folder)
     
 }
 
+std::list<std::shared_ptr<DocumentRelevance>> InvertedIndex::executeQuery(const std::string& query)
+{
+
+
+
+
+
+
+}
+
+void InvertedIndex::intersect(std::list<std::shared_ptr<DocumentRelevance>>& answer, const std::shared_ptr<Term>& term)
+{  
+    auto& term_document = term->getList();
+
+    auto start_term_document = term_document.begin();
+    auto end_term_document = term_document.end();
+
+    auto start_doc_relevance = answer.begin();
+    auto end_doc_relevance = answer.end();
+
+    while (start_term_document != end_term_document && start_doc_relevance != end_doc_relevance)
+    {
+        size_t rev_doc_id = start_doc_relevance->get()->getDocId();
+        size_t term_doc_id = start_term_document->get()->getDocId();
+
+        if (rev_doc_id == term_doc_id)
+        {
+            double tf_idf = start_term_document->get()->getTfIdf();
+            start_doc_relevance->get()->updateRelevance(tf_idf);
+
+            ++start_term_document;
+            ++start_doc_relevance;
+        }
+        
+        else if (rev_doc_id > term_doc_id) ++start_term_document;
+        else if (rev_doc_id < term_doc_id) ++start_doc_relevance;        
+    }
+}
+
 void InvertedIndex::extract_text(GumboNode* node, std::string& output)
 {  
     if (node->type == GUMBO_NODE_ELEMENT) 
@@ -213,140 +226,98 @@ std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
     return words;
 }
 
-std::list<int> InvertedIndex::executeQuery(const std::string& query) 
-{
-    std::list<int> result;
-
-    std::stack<std::string> operators;
-    std::stack<std::list<int>> operands;
-
-    std::istringstream ss(query);
-    std::string token{};
-    while (std::getline(ss, token, ' ')) 
-    {
-        token = normalize(token);
-
-        if (token == "(") 
-            operators.push(token);
-
-        else if (token == ")") 
-        {
-            while (!operators.empty() && operators.top() != "(") 
-                proces_logical_operators(operators, operands);
-            operators.pop(); 
-        } 
-        else if (token == "and" || token == "or") 
-            operators.push(token);
-        else 
-            if (m_stop_words.find(token) == m_stop_words.end())
-                operands.push(m_index[token]);
-            else 
-                operands.push(std::list<int>{-1});
-    }
-
-    while (!operators.empty()) 
-        proces_logical_operators(operators, operands);
+// void InvertedIndex::serialize(const std::string& destination)
+// {
+//     std::ofstream out(destination, std::ios::binary);
     
-    result = operands.top();
-    operands.pop();
-
-    if (result == std::list<int>{-1}) result.clear();
-
-    return result;
-}
-
-void InvertedIndex::serialize(const std::string& destination)
-{
-    std::ofstream out(destination, std::ios::binary);
+//     // Сериализация list m_documents
+//     size_t doc_count = m_documents.size();
+//     out.write(reinterpret_cast<const char*>(&doc_count), sizeof(doc_count));
     
-    // Сериализация list m_documents
-    size_t doc_count = m_documents.size();
-    out.write(reinterpret_cast<const char*>(&doc_count), sizeof(doc_count));
+//     for (const auto& docs : m_documents) 
+//     {
+//         size_t length = docs.size();
+//         out.write(reinterpret_cast<const char*>(&length), sizeof(length));
+//         out.write(docs.c_str(), length);
+//     }
     
-    for (const auto& docs : m_documents) 
-    {
-        size_t length = docs.size();
-        out.write(reinterpret_cast<const char*>(&length), sizeof(length));
-        out.write(docs.c_str(), length);
-    }
+//     // Сериализация hash_map m_index
+//     size_t index_size = m_index.size();
+//     out.write(reinterpret_cast<const char*>(&index_size), sizeof(index_size));
     
-    // Сериализация hash_map m_index
-    size_t index_size = m_index.size();
-    out.write(reinterpret_cast<const char*>(&index_size), sizeof(index_size));
-    
-    for (const auto& [key, value] : m_index) 
-    {
-        size_t key_length = key.size();
-        out.write(reinterpret_cast<const char*>(&key_length), sizeof(key_length));
-        out.write(key.c_str(), key_length);
+//     for (const auto& [key, value] : m_index) 
+//     {
+//         size_t key_length = key.size();
+//         out.write(reinterpret_cast<const char*>(&key_length), sizeof(key_length));
+//         out.write(key.c_str(), key_length);
         
-        size_t value_size = value.size();
-        out.write(reinterpret_cast<const char*>(&value_size), sizeof(value_size));
+//         size_t value_size = value.size();
+//         out.write(reinterpret_cast<const char*>(&value_size), sizeof(value_size));
         
-        for (const auto& val : value) 
-        {
-            out.write(reinterpret_cast<const char*>(&val), sizeof(val));
-        }
-    }
+//         for (const auto& val : value) 
+//         {
+//             out.write(reinterpret_cast<const char*>(&val), sizeof(val));
+//         }
+//     }
     
-    out.close();
-}
+//     out.close();
+// }
 
-InvertedIndex& InvertedIndex::deserialize(const std::string& source)
-{
-    std::ifstream in(source, std::ios::binary);
-    if (!in) 
-    {
-        std::cerr << "Failed to open file: " << source << std::endl;
-        return *this; 
-    }
+// InvertedIndex& InvertedIndex::deserialize(const std::string& source)
+// {
+//     std::ifstream in(source, std::ios::binary);
+//     if (!in) 
+//     {
+//         std::cerr << "Failed to open file: " << source << std::endl;
+//         return *this; 
+//     }
 
-    // десериализация list documents
-    size_t doc_count;
-    in.read(reinterpret_cast<char*>(&doc_count), sizeof(doc_count));
+//     // десериализация list documents
+//     size_t doc_count;
+//     in.read(reinterpret_cast<char*>(&doc_count), sizeof(doc_count));
     
-    m_documents.clear();
-    for (size_t i = 0; i < doc_count; ++i) 
-    {
-        size_t length;
-        in.read(reinterpret_cast<char*>(&length), sizeof(length));
+//     m_documents.clear();
+//     for (size_t i = 0; i < doc_count; ++i) 
+//     {
+//         size_t length;
+//         in.read(reinterpret_cast<char*>(&length), sizeof(length));
         
-        std::string doc(length, '0'); 
-        in.read(&doc[0], length);
-        m_documents.push_back(doc);
-    }
+//         std::string doc(length, '0'); 
+//         in.read(&doc[0], length);
+//         m_documents.push_back(doc);
+//     }
 
-    // десериализация hash_map index
-    size_t index_size;
-    in.read(reinterpret_cast<char*>(&index_size), sizeof(index_size));
+//     // десериализация hash_map index
+//     size_t index_size;
+//     in.read(reinterpret_cast<char*>(&index_size), sizeof(index_size));
     
-    m_index.clear();
-    for (size_t i = 0; i < index_size; ++i) 
-    {
-        size_t key_length;
-        in.read(reinterpret_cast<char*>(&key_length), sizeof(key_length));
+//     m_index.clear();
+//     for (size_t i = 0; i < index_size; ++i) 
+//     {
+//         size_t key_length;
+//         in.read(reinterpret_cast<char*>(&key_length), sizeof(key_length));
         
-        std::string key(key_length, '0');
-        in.read(&key[0], key_length);
+//         std::string key(key_length, '0');
+//         in.read(&key[0], key_length);
         
-        size_t value_size;
-        in.read(reinterpret_cast<char*>(&value_size), sizeof(value_size));
+//         size_t value_size;
+//         in.read(reinterpret_cast<char*>(&value_size), sizeof(value_size));
 
-        std::list<int> values;
-        for (size_t j = 0; j < value_size; ++j) 
-        {
-            int val;
-            in.read(reinterpret_cast<char*>(&val), sizeof(val));
-            values.push_back(val);
-        }
+//         std::list<int> values;
+//         for (size_t j = 0; j < value_size; ++j) 
+//         {
+//             int val;
+//             in.read(reinterpret_cast<char*>(&val), sizeof(val));
+//             values.push_back(val);
+//         }
         
-        m_index[key] = values; 
-    }
+//         m_index[key] = values; 
+//     }
 
-    in.close();
+//     in.close();
 
-    return *this; 
-}
+//     return *this; 
+// }
 
 InvertedIndex& InvertedIndex::readFromDisk(const std::string& file_name)
 {
@@ -363,73 +334,6 @@ InvertedIndex& InvertedIndex::readFromDisk(const std::string& file_name)
         return invertedIndex;
     
     return invertedIndex.deserialize(file_name);
-}
-
-std::list<int> InvertedIndex::get_intersection(const std::list<int>& l1, const std::list<int>& l2) const noexcept
-{
-    std::list<int> result_of_intersection;
-
-    auto it1 = l1.begin();
-    auto it2 = l2.begin();
-
-    while (it1 != l1.end() && it2 != l2.end())
-    {
-        if (*it1 == *it2)
-        {
-            result_of_intersection.push_back(*it1);
-            ++it1;
-            ++it2;
-        }
-        else if (*it1 < *it2) ++it1;
-        else ++it2;
-    }
-
-    // std::set_intersection(l1.begin(), l1.end(), l2.begin(), l2.end(), std::back_inserter(result_of_intersection));
-
-    return result_of_intersection;
-}
-
-std::list<int> InvertedIndex::get_union(const std::list<int>& l1, const std::list<int>& l2) const noexcept
-{
-    std::list<int> result_of_union;
-
-    auto it1 = l1.begin();
-    auto it2 = l2.begin();
-
-    while (it1 != l1.end() && it2 != l2.end()) 
-    {
-        if (*it1 == *it2) 
-        {
-            result_of_union.push_back(*it1);
-            ++it1;
-            ++it2;
-        } 
-        else if (*it1 < *it2) 
-        {
-            result_of_union.push_back(*it1);
-            ++it1;
-        }
-
-        else 
-        {
-            result_of_union.push_back(*it2);
-            ++it2;
-        }
-    }
-
-    while (it1 != l1.end()) 
-    {
-        result_of_union.push_back(*it1);
-        ++it1;
-    }
-
-    while (it2 != l2.end()) 
-    {
-        result_of_union.push_back(*it2);
-        ++it2;
-    }
-
-    return result_of_union;
 }
 
 MimeType InvertedIndex::get_mime_type_of_document(const std::string& file_name) const noexcept
@@ -460,35 +364,6 @@ std::string InvertedIndex::connect_by_url(const std::string& url)
     }
     
     return read_buffer;
-}
-
-void InvertedIndex::proces_logical_operators(std::stack<std::string>& operators, std::stack<std::list<int>>& operands) noexcept
-{
-    auto detected = std::list<int>{-1};
-
-    auto op = operators.top(); operators.pop();
-    auto second_operand = operands.top(); operands.pop();
-    auto first_operand = operands.top(); operands.pop();
-
-    if (op == "and")
-    {
-        if (second_operand == detected)
-            operands.push(first_operand);
-        else if (first_operand == detected)
-            operands.push(second_operand);            
-        else 
-            operands.push(get_intersection(first_operand, second_operand));
-    }
-
-    else if (op == "or")
-    {
-        if (second_operand == detected)
-            operands.push(first_operand);
-        else if (first_operand == detected)
-            operands.push(second_operand);
-        else
-            operands.push(get_union(first_operand, second_operand));
-    }
 }
 
 std::string InvertedIndex::normalize(const std::string& term) const 
@@ -526,14 +401,27 @@ std::string InvertedIndex::normalize(const std::string& term) const
     return result;
 }
 
-void InvertedIndex::add_word_to_index(const std::string &word, int doc_id)
+void InvertedIndex::add_word_to_index(const std::string& word, int doc_id)
 {
-    if (!word.empty()) 
-    {
-        auto& postings = m_index[word];
-        if (postings.empty() || postings.back() != doc_id)
-            postings.push_back(doc_id);   
+    if (!word.empty())
+    {   
+        auto& term_ptr = m_index[word];
+        term_ptr->addDocument(doc_id);
+
+        double documents_size = static_cast<double>(m_documents.size());
+        double document_frequency = static_cast<double>(term_ptr->getDocumentFrequency());
+
+        double idf = log10(documents_size/document_frequency);
+        term_ptr->computeTfIdf(idf);
     }
+
+
+    // if (!word.empty()) 
+    // {
+    //     auto& postings = m_index[word];
+    //     if (postings.empty() || postings.back() != doc_id)
+    //         postings.push_back(doc_id);   
+    // }
 }
 
 void InvertedIndex::log_document(const std::string& file_name, int doc_id) const noexcept
