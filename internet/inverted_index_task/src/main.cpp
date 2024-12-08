@@ -17,8 +17,8 @@ std::ostream& operator << (std::ostream& os, const std::list<T>& lst)
 int main() 
 {
 	InvertedIndex ii;
-	// ii.indexCollection("/home/gennadiy/collection_html");
-	ii.indexCollection("/home/gennadiy/collection_test");
+	ii.indexCollection("/home/gennadiy/collection_html");
+	// ii.indexCollection("/home/gennadiy/collection_test");
 	std::cout << "King " <<  ii.executeQuery("King") << std::endl;
 	
 

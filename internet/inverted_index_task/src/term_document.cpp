@@ -19,7 +19,7 @@ void TermDocument::increaseFrequency() noexcept
 
 void TermDocument::computeTfIdf(double idf) noexcept
 {
-    auto term_weight = (1 + log10(m_tf));
+    auto term_weight = m_tf > 0 ? (1 + log10(m_tf)) : 0;
     m_tf_idf = term_weight * idf;
 }
 

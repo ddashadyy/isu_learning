@@ -19,8 +19,8 @@ void Term::addDocument(size_t docId) noexcept
 
 void Term::computeTfIdf(double idf) noexcept
 {
-    std::for_each(m_list.begin(), m_list.end(), [&](TermDocument& td_ptr) {
-        td_ptr.computeTfIdf(idf);
+    std::for_each(m_list.begin(), m_list.end(), [&](TermDocument& td) {
+        td.computeTfIdf(idf);
     });
 }
 

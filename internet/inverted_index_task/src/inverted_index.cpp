@@ -215,12 +215,9 @@ void InvertedIndex::intersect(std::list<DocumentRelevance>& answer, Term& term)
     auto& term_document = term.getList();
 
     auto start_term_document = term_document.begin();
-    auto end_term_document = term_document.end();
-
     auto start_doc_relevance = answer.begin();
-    auto end_doc_relevance = answer.end();
-
-    while (start_term_document != end_term_document && start_doc_relevance != end_doc_relevance)
+    
+    while (start_term_document != term_document.end() && start_doc_relevance != answer.end())
     {
         size_t rev_doc_id = start_doc_relevance->getDocId();
         size_t term_doc_id = start_term_document->getDocId();
