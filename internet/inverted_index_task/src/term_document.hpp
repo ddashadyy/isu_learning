@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <string>
+#include <ostream>
 
 class TermDocument
 {
@@ -20,4 +21,6 @@ private:
     double m_tf_idf;
 };
 
-// попозже вернуться к оператору вывода 
+std::ostream& operator << (std::ostream& os, const TermDocument& td);
+
+

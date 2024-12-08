@@ -17,10 +17,11 @@ enum class MimeType
 {
     TEXT,
     HTML,
-    WEB
+    WEB,
+    OTHER
 };
 
-class InvertedIndex : IByteSerialize<InvertedIndex>
+class InvertedIndex // : IByteSerialize<InvertedIndex>
 {
 public:
     InvertedIndex() { curl_global_init(CURL_GLOBAL_DEFAULT); }
@@ -30,13 +31,14 @@ public:
     void indexDocument( const std::string& path );
     void indexCollection( const std::string& folder );
 
-    std::list<std::shared_ptr<DocumentRelevance>> executeQuery( const std::string& query );
-    void intersect( std::list<std::shared_ptr<DocumentRelevance>>& answer, const std::shared_ptr<Term>& term );
+    std::list<DocumentRelevance> executeQuery( const std::string& query );
+    std::list<DocumentRelevance> executeQuery( const std::string& query, size_t n );
+    void intersect( std::list<DocumentRelevance>& answer, Term& term );
     
-    void serialize( const std::string& destination ) override;
-    InvertedIndex& deserialize( const std::string& source ) override;
+    // void serialize( const std::string& destination ) override;
+    // InvertedIndex& deserialize( const std::string& source ) override;
 
-    static InvertedIndex& readFromDisk(const std::string& file_name);
+    // static InvertedIndex& readFromDisk(const std::string& file_name);
 
 private:
     MimeType get_mime_type_of_document( const std::string& file_name ) const noexcept;
@@ -50,10 +52,11 @@ private:
 
     void extract_text( GumboNode* node, std::string& output );
     static size_t WriteCallback( void* contents, size_t size, size_t nmemb, std::string* userp );
-    std::vector<std::string> splitString( std::string& line ) noexcept;
+    std::vector<std::string> splitString( const std::string& line ) noexcept;
     
     std::list<std::string> m_documents{};
-    std::unordered_map<std::string, std::shared_ptr<Term>> m_index{};     
+    std::unordered_map<std::string, Term> m_index{};  
+    size_t m_count_tokens{};   
 
 protected:
     std::string connect_by_url( const std::string& url );

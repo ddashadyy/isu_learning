@@ -141,23 +141,78 @@ void InvertedIndex::indexCollection(const std::string& folder)
         }
     }
 
+    for (auto& [word, term] : m_index)
+    {
+        double documents_size = static_cast<double>(m_documents.size()); 
+        double document_frequency = static_cast<double>(term.getDocumentFrequency());
+
+        double idf = log10(documents_size / document_frequency);
+        term.computeTfIdf(idf);
+    }
+
     log_bottom_table();
     
 }
 
-std::list<std::shared_ptr<DocumentRelevance>> InvertedIndex::executeQuery(const std::string& query)
+std::list<DocumentRelevance> InvertedIndex::executeQuery(const std::string& query)
 {
+    std::list <DocumentRelevance> answer;
+    auto splited_query = splitString(query);
 
+    for (const auto& word : splited_query)   
+    {
+        auto normalized_word = normalize(word);
 
+        if (m_index.find(normalized_word) != m_index.end())
+        {
+            auto& term = m_index.at(normalized_word);   
+            auto& list = term.getList();
+            
+            for (const auto& term_doc : list)
+            {
+                DocumentRelevance doc_rel(term_doc.getDocId());
+                answer.push_back(doc_rel);
+            }
 
+            intersect(answer, term);
+        }
 
+        
+    }
+    
+    answer.sort([](const DocumentRelevance& lhs, const DocumentRelevance& rhs) {
+        return lhs.getRelevance() > rhs.getRelevance();
+    });
 
+    answer.remove_if([](const DocumentRelevance& dr) {
+        return dr.getRelevance() < std::numeric_limits<double>::epsilon();
+    });
 
+    return answer;
 }
 
-void InvertedIndex::intersect(std::list<std::shared_ptr<DocumentRelevance>>& answer, const std::shared_ptr<Term>& term)
+std::list<DocumentRelevance> InvertedIndex::executeQuery(const std::string& query, size_t n)
+{
+    auto list_doc_rel = executeQuery(query);
+    std::list<DocumentRelevance> limited_results;
+
+    size_t count = 0;
+    for (const auto& doc_rel : list_doc_rel)
+    {
+        if (count < n)
+        {
+            limited_results.push_back(doc_rel);
+            ++count;
+        }
+        else break; 
+    }
+
+    return limited_results; 
+}
+
+void InvertedIndex::intersect(std::list<DocumentRelevance>& answer, Term& term)
 {  
-    auto& term_document = term->getList();
+    auto& term_document = term.getList();
 
     auto start_term_document = term_document.begin();
     auto end_term_document = term_document.end();
@@ -167,13 +222,13 @@ void InvertedIndex::intersect(std::list<std::shared_ptr<DocumentRelevance>>& ans
 
     while (start_term_document != end_term_document && start_doc_relevance != end_doc_relevance)
     {
-        size_t rev_doc_id = start_doc_relevance->get()->getDocId();
-        size_t term_doc_id = start_term_document->get()->getDocId();
+        size_t rev_doc_id = start_doc_relevance->getDocId();
+        size_t term_doc_id = start_term_document->getDocId();
 
         if (rev_doc_id == term_doc_id)
         {
-            double tf_idf = start_term_document->get()->getTfIdf();
-            start_doc_relevance->get()->updateRelevance(tf_idf);
+            double tf_idf = start_term_document->getTfIdf();
+            start_doc_relevance->updateRelevance(tf_idf);
 
             ++start_term_document;
             ++start_doc_relevance;
@@ -213,7 +268,7 @@ size_t InvertedIndex::WriteCallback(void* contents, size_t size, size_t nmemb, s
     return totalSize;
 }
 
-std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
+std::vector<std::string> InvertedIndex::splitString(const std::string& line) noexcept
 {
     std::vector<std::string> words;
     std::istringstream stream(line);
@@ -319,28 +374,30 @@ std::vector<std::string> InvertedIndex::splitString(std::string& line) noexcept
 //     return *this; 
 // }
 
-InvertedIndex& InvertedIndex::readFromDisk(const std::string& file_name)
-{
-    static InvertedIndex invertedIndex{};
+// InvertedIndex& InvertedIndex::readFromDisk(const std::string& file_name)
+// {
+//     static InvertedIndex invertedIndex{};
 
-    std::ifstream construct_file;
-    construct_file.open(file_name);
+//     std::ifstream construct_file;
+//     construct_file.open(file_name);
 
-    char c;
-    if (!construct_file.is_open()) 
-        return invertedIndex;
+//     char c;
+//     if (!construct_file.is_open()) 
+//         return invertedIndex;
     
-    else if (!(construct_file >> c))
-        return invertedIndex;
+//     else if (!(construct_file >> c))
+//         return invertedIndex;
     
-    return invertedIndex.deserialize(file_name);
-}
+//     return invertedIndex.deserialize(file_name);
+// }
 
 MimeType InvertedIndex::get_mime_type_of_document(const std::string& file_name) const noexcept
 {
     if (file_name.starts_with("http://") || file_name.starts_with("https://")) return MimeType::WEB;
     else if (file_name.ends_with(".htm") || file_name.ends_with(".html")) return MimeType::HTML;
-    else if  (file_name.ends_with(".txt"))  return MimeType::TEXT;
+    else if (file_name.ends_with(".txt")) return MimeType::TEXT;
+
+    return MimeType::OTHER;
 }
 
 std::string InvertedIndex::connect_by_url(const std::string& url)
@@ -405,23 +462,13 @@ void InvertedIndex::add_word_to_index(const std::string& word, int doc_id)
 {
     if (!word.empty())
     {   
-        auto& term_ptr = m_index[word];
-        term_ptr->addDocument(doc_id);
+        Term term(doc_id);
+        term.addDocument(doc_id);
 
-        double documents_size = static_cast<double>(m_documents.size());
-        double document_frequency = static_cast<double>(term_ptr->getDocumentFrequency());
+        m_index.insert(std::make_pair(word, term));
 
-        double idf = log10(documents_size/document_frequency);
-        term_ptr->computeTfIdf(idf);
+        m_count_tokens++;
     }
-
-
-    // if (!word.empty()) 
-    // {
-    //     auto& postings = m_index[word];
-    //     if (postings.empty() || postings.back() != doc_id)
-    //         postings.push_back(doc_id);   
-    // }
 }
 
 void InvertedIndex::log_document(const std::string& file_name, int doc_id) const noexcept

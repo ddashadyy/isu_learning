@@ -18,3 +18,8 @@ void DocumentRelevance::updateRelevance(double tf) noexcept
 {
     m_relevance += tf;
 }
+
+std::ostream& operator << (std::ostream& os, const DocumentRelevance& dr)
+{
+    return os << dr.getDocId() << " - " << dr.getRelevance() << ";";
+}

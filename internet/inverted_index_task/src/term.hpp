@@ -14,9 +14,9 @@ public:
     void computeTfIdf(double idf) noexcept;
 
     size_t getDocumentFrequency() noexcept;
-    std::list<std::shared_ptr<TermDocument>>& getList() noexcept;
+    std::list<TermDocument>& getList() noexcept;
 
 private:
-    std::list<std::shared_ptr<TermDocument>> m_list;
+    std::list<TermDocument> m_list;
     size_t m_term_frequency_in_collection;
 };
