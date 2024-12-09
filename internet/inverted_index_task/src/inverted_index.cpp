@@ -154,9 +154,9 @@ void InvertedIndex::indexCollection(const std::string& folder)
     
 }
 
-std::list<DocumentRelevance> InvertedIndex::executeQuery(const std::string& query)
+std::vector<DocumentRelevance> InvertedIndex::executeQuery(const std::string& query)
 {
-    std::list <DocumentRelevance> answer;
+    std::vector <DocumentRelevance> answer;
     auto splited_query = splitString(query);
 
     for (const auto& word : splited_query)   
@@ -179,22 +179,22 @@ std::list<DocumentRelevance> InvertedIndex::executeQuery(const std::string& quer
 
         
     }
-    
-    answer.sort([](const DocumentRelevance& lhs, const DocumentRelevance& rhs) {
-        return lhs.getRelevance() > rhs.getRelevance();
+
+     std::remove_if(answer.begin(), answer.end(), [](const DocumentRelevance& dr) {
+        return dr.getRelevance() <= std::numeric_limits<double>::epsilon();
     });
 
-    answer.remove_if([](const DocumentRelevance& dr) {
-        return dr.getRelevance() < std::numeric_limits<double>::epsilon();
+    std::sort(answer.begin(), answer.end(), [](const DocumentRelevance& lhs, const DocumentRelevance& rhs) {
+        return lhs.getRelevance() > rhs.getRelevance();
     });
 
     return answer;
 }
 
-std::list<DocumentRelevance> InvertedIndex::executeQuery(const std::string& query, size_t n)
+std::vector<DocumentRelevance> InvertedIndex::executeQuery(const std::string& query, size_t n)
 {
     auto list_doc_rel = executeQuery(query);
-    std::list<DocumentRelevance> limited_results;
+    std::vector<DocumentRelevance> limited_results;
 
     size_t count = 0;
     for (const auto& doc_rel : list_doc_rel)
@@ -210,30 +210,13 @@ std::list<DocumentRelevance> InvertedIndex::executeQuery(const std::string& quer
     return limited_results; 
 }
 
-void InvertedIndex::intersect(std::list<DocumentRelevance>& answer, Term& term)
+void InvertedIndex::intersect(std::vector<DocumentRelevance>& answer, Term& term)
 {  
     auto& term_document = term.getList();
-
-    auto start_term_document = term_document.begin();
-    auto start_doc_relevance = answer.begin();
-    
-    while (start_term_document != term_document.end() && start_doc_relevance != answer.end())
+    for (auto it = term_document.begin(); it != term_document.end(); ++it)
     {
-        size_t rev_doc_id = start_doc_relevance->getDocId();
-        size_t term_doc_id = start_term_document->getDocId();
-
-        if (rev_doc_id == term_doc_id)
-        {
-            double tf_idf = start_term_document->getTfIdf();
-            start_doc_relevance->updateRelevance(tf_idf);
-
-            ++start_term_document;
-            ++start_doc_relevance;
-        }
-        
-        else if (rev_doc_id > term_doc_id) ++start_term_document;
-        else if (rev_doc_id < term_doc_id) ++start_doc_relevance;        
-    }
+       answer[it->getDocId()].updateRelevance(it->getTfIdf());
+    } 
 }
 
 void InvertedIndex::extract_text(GumboNode* node, std::string& output)
@@ -459,12 +442,17 @@ void InvertedIndex::add_word_to_index(const std::string& word, int doc_id)
 {
     if (!word.empty())
     {   
-        Term term(doc_id);
-        term.addDocument(doc_id);
+        if (m_index.find(word) != m_index.end()) 
+        {
+            auto& existing_term = m_index.at(word);
+            existing_term.addDocument(doc_id);
+        }
+        else
+        {
+            Term term(doc_id);
+            m_index.insert(std::make_pair(word, term));
+        }
 
-        m_index.insert(std::make_pair(word, term));
-
-        m_count_tokens++;
     }
 }
 

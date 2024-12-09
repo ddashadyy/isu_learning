@@ -1,7 +1,7 @@
 #include "term.hpp"
 #include <algorithm>
 
-Term::Term(size_t docId) : m_term_frequency_in_collection(1ul)
+Term::Term(size_t docId) 
 {
     m_list.emplace_back(docId);
 }
@@ -14,7 +14,6 @@ void Term::addDocument(size_t docId) noexcept
         m_list.back().increaseFrequency();
     else m_list.emplace_back(docId);
 
-    ++m_term_frequency_in_collection;   
 }
 
 void Term::computeTfIdf(double idf) noexcept
@@ -26,8 +25,9 @@ void Term::computeTfIdf(double idf) noexcept
 
 size_t Term::getDocumentFrequency() noexcept
 {
-    return m_term_frequency_in_collection;
+    return m_list.size();
 }
+
 
 std::list<TermDocument>& Term::getList() noexcept
 {

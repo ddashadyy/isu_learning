@@ -31,9 +31,9 @@ public:
     void indexDocument( const std::string& path );
     void indexCollection( const std::string& folder );
 
-    std::list<DocumentRelevance> executeQuery( const std::string& query );
-    std::list<DocumentRelevance> executeQuery( const std::string& query, size_t n );
-    void intersect( std::list<DocumentRelevance>& answer, Term& term );
+    std::vector<DocumentRelevance> executeQuery( const std::string& query );
+    std::vector<DocumentRelevance> executeQuery( const std::string& query, size_t n );
+    void intersect( std::vector<DocumentRelevance>& answer, Term& term );
     
     // void serialize( const std::string& destination ) override;
     // InvertedIndex& deserialize( const std::string& source ) override;
@@ -56,7 +56,6 @@ private:
     
     std::list<std::string> m_documents{};
     std::unordered_map<std::string, Term> m_index{};  
-    size_t m_count_tokens{};   
 
 protected:
     std::string connect_by_url( const std::string& url );

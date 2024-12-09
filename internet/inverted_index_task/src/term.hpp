@@ -18,5 +18,4 @@ public:
 
 private:
     std::list<TermDocument> m_list;
-    size_t m_term_frequency_in_collection;
 };
