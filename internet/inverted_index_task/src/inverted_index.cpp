@@ -157,27 +157,21 @@ void InvertedIndex::indexCollection(const std::string& folder)
 std::vector<DocumentRelevance> InvertedIndex::executeQuery(const std::string& query)
 {
     std::vector <DocumentRelevance> answer;
+    for (size_t i = 0; i < m_documents.size(); ++i)
+    {
+        DocumentRelevance dr(i);
+        answer.push_back(dr);
+    }
+    
+
     auto splited_query = splitString(query);
 
     for (const auto& word : splited_query)   
     {
         auto normalized_word = normalize(word);
 
-        if (m_index.find(normalized_word) != m_index.end())
-        {
-            auto& term = m_index.at(normalized_word);   
-            auto& list = term.getList();
-            
-            for (const auto& term_doc : list)
-            {
-                DocumentRelevance doc_rel(term_doc.getDocId());
-                answer.push_back(doc_rel);
-            }
-
-            intersect(answer, term);
-        }
-
-        
+        if (m_index.contains(normalized_word))
+            intersect(answer, m_index.at(normalized_word));
     }
 
      std::remove_if(answer.begin(), answer.end(), [](const DocumentRelevance& dr) {
