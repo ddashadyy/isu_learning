@@ -14,18 +14,20 @@ std::ostream& operator << (std::ostream& os, const std::vector<T>& con)
     return os;
 }
 
+#include <chrono>
 
 int main() 
 {
 	InvertedIndex ii;
-	ii.indexCollection("/home/gennadiy/isu_learning/collection_html");
 
-	std::cout << "King " << ii.executeQuery("King") << std::endl;
-	std::cout << "Romeo " << ii.executeQuery("Romeo") << std::endl;
-	std::cout << "Juliet " << ii.executeQuery("Juliet") << std::endl;
-	std::cout << "Caesar " << ii.executeQuery("Caesar") << std::endl;
-	std::cout << "SpiderMan " << ii.executeQuery("SpiderMan") << std::endl;
-	std::cout << "Brutus Caesar Calpurnia " << ii.executeQuery("Brutus Caesar Calpurnia") << std::endl;
+	auto start = std::chrono::high_resolution_clock::now();
+	ii.indexCollection("/home/gennadiy/collection_html");
+	auto end = std::chrono::high_resolution_clock::now();
+
+	std::chrono::duration<double> time = end - start;
+	std::cout << time.count() << std::endl;
+
+	ii.printResult("Juliet");
 
     return EXIT_SUCCESS;
 }
