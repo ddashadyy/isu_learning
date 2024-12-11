@@ -1,24 +1,17 @@
 #pragma once
 
 #include <string>
-
-template< class T >
-struct IByteSerialize;
-
-// в планах сделать
-template< class T >
-struct IJsonSerialize;
+#include <nlohmann/json.hpp>
 
 
 template< class T >
-struct IByteSerialize
+struct IJsonSerialize
 {
     using reference = T&;
 
-    IByteSerialize() = default;
-    virtual ~IByteSerialize() = default;
+    IJsonSerialize() = default;
+    virtual ~IJsonSerialize() = default;
 
     virtual void serialize( const std::string& destination ) = 0;
     virtual reference deserialize( const std::string& source ) = 0;
 };
-
