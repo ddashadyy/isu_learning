@@ -174,9 +174,9 @@ std::vector<DocumentRelevance> InvertedIndex::executeQuery(const std::string& qu
             intersect(answer, m_index.at(normalized_word));
     }
 
-     std::remove_if(answer.begin(), answer.end(), [](const DocumentRelevance& dr) {
-        return dr.getRelevance() <= std::numeric_limits<double>::epsilon();
-    });
+    answer.erase(std::remove_if(answer.begin(), answer.end(), [](const DocumentRelevance& dr) {
+        return dr.getRelevance() <= 0.0; 
+    }), answer.end());
 
     std::sort(answer.begin(), answer.end(), [](const DocumentRelevance& lhs, const DocumentRelevance& rhs) {
         return lhs.getRelevance() > rhs.getRelevance();
@@ -211,6 +211,31 @@ void InvertedIndex::intersect(std::vector<DocumentRelevance>& answer, Term& term
     {
        answer[it->getDocId()].updateRelevance(it->getTfIdf());
     } 
+}
+
+void InvertedIndex::printResult(const std::string& query)
+{
+    std::vector<DocumentRelevance> results = executeQuery(query);
+
+    std::cout << "Запрос: " << query << std::endl;
+    size_t rank = 1;
+
+    std::vector<std::string> docVector(m_documents.begin(), m_documents.end());
+
+    for (const DocumentRelevance& doc : results) 
+    {
+        const size_t doc_id = doc.getDocId();
+        const double relevance = doc.getRelevance();
+        
+        if (doc_id >= 0 && doc_id < docVector.size()) 
+        {
+            std::string documentTitle = docVector[doc_id];
+            std::cout << rank++ << ". (" << std::fixed << std::setprecision(5) << relevance << ") " << documentTitle << std::endl;
+        } 
+        else std::cout << rank++ << ". (недействительный ID: " << doc_id << ")" << std::endl;   
+    }
+
+    if (results.empty()) std::cout << "Результаты не найдены." << std::endl;
 }
 
 void InvertedIndex::extract_text(GumboNode* node, std::string& output)

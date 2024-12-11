@@ -34,6 +34,7 @@ public:
     std::vector<DocumentRelevance> executeQuery( const std::string& query );
     std::vector<DocumentRelevance> executeQuery( const std::string& query, size_t n );
     void intersect( std::vector<DocumentRelevance>& answer, Term& term );
+    void printResult(const std::string& query);
     
     // void serialize( const std::string& destination ) override;
     // InvertedIndex& deserialize( const std::string& source ) override;
