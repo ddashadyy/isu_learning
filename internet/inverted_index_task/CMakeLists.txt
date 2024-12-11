@@ -16,7 +16,6 @@ set(SOURCE_FILES
     src/term.cpp
 )
 
-
 add_compile_options(-Wall -Wextra -Wpedantic -Ofast)
 
 add_executable(inverted-index ${SOURCE_FILES})
@@ -28,6 +27,8 @@ else()
     message(FATAL_ERROR "libstemmer not found")
 endif()
 
-target_link_libraries(inverted-index gumbo curl)
+find_package(nlohmann_json 3.2.0 REQUIRED)
+
+target_link_libraries(inverted-index gumbo curl nlohmann_json::nlohmann_json)
 include_directories(${Gumbo_INCLUDE_DIRS})
 
