@@ -3,8 +3,11 @@
 #include <cstddef>
 #include <string>
 #include <ostream>
+#include <nlohmann/json.hpp>
 
-class TermDocument
+using json = nlohmann::json;
+
+class TermDocument final
 {
 public:
     TermDocument( size_t docId );
@@ -14,6 +17,9 @@ public:
     void increaseFrequency() noexcept;
     void computeTfIdf( double idf ) noexcept;
     double getTfIdf() const noexcept;
+
+    json toJson() const;
+    static TermDocument fromJson( const json& jsonFile );
 
 private:
     size_t m_doc_id;

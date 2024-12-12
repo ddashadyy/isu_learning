@@ -33,3 +33,19 @@ std::list<TermDocument>& Term::getList() noexcept
 {
     return m_list;
 }
+
+json Term::toJson() const
+{
+    json j;
+    for (const auto& term_doc : m_list)
+        j.push_back(term_doc.toJson());
+    return j;
+}
+
+Term Term::fromJson(const json& jsonFile) 
+{
+    Term term(0);
+    for (const auto& item : jsonFile)
+        term.m_list.push_back(TermDocument::fromJson(item));
+    return term;
+}
