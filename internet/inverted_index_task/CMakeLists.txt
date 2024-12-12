@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.13)
 
 project(inverted_index)               
 
+set(CMAKE_CXX_COMPILER /usr/bin/clang++)
 set(CMAKE_CXX_STANDARD 20)            
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
-set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
-set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -ffast-math -fomit-frame-pointer")
 
 set(SOURCE_FILES 
     src/main.cpp
@@ -16,7 +16,7 @@ set(SOURCE_FILES
     src/term.cpp
 )
 
-add_compile_options(-Wall -Wextra -Wpedantic -Ofast)
+add_compile_options(-Wall -Wextra -Wpedantic -Ofast -march=native -ffast-math -fomit-frame-pointer)
 
 add_executable(inverted-index ${SOURCE_FILES})
 
