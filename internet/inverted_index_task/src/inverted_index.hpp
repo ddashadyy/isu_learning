@@ -21,7 +21,7 @@ enum class MimeType
     OTHER
 };
 
-class InvertedIndex // : IByteSerialize<InvertedIndex>
+class InvertedIndex : IJsonSerialize<InvertedIndex>
 {
 public:
     InvertedIndex() { curl_global_init(CURL_GLOBAL_DEFAULT); }
@@ -36,10 +36,10 @@ public:
     void intersect( std::vector<DocumentRelevance>& answer, Term& term );
     void printResult(const std::string& query);
     
-    // void serialize( const std::string& destination ) override;
-    // InvertedIndex& deserialize( const std::string& source ) override;
+    void serialize( const std::string& destination ) override;
+    InvertedIndex& deserialize( const std::string& source ) override;
 
-    // static InvertedIndex& readFromDisk(const std::string& file_name);
+    static InvertedIndex& readFromDisk(const std::string& file_name);
 
 private:
     MimeType get_mime_type_of_document( const std::string& file_name ) const noexcept;

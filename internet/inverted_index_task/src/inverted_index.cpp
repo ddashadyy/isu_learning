@@ -238,6 +238,43 @@ void InvertedIndex::printResult(const std::string& query)
     if (results.empty()) std::cout << "Результаты не найдены." << std::endl;
 }
 
+void InvertedIndex::serialize(const std::string& destination)
+{
+    using json = nlohmann::json;
+    json serialized_file;
+
+    serialized_file["documents"] = m_documents;
+    
+    for (const auto& [word, term] : m_index)
+    {   
+        serialized_file["index"][word] = term.toJson();
+    }
+
+    std::ofstream file(destination);
+    if (file.is_open()) 
+    {
+        file << serialized_file.dump(4); 
+        file.close();
+        std::cout << "JSON-файл успешно создан: " << destination << std::endl;
+    } 
+    else std::cerr << "Не удалось открыть файл для записи." << std::endl;
+    
+}
+
+InvertedIndex& InvertedIndex::deserialize(const std::string &source)
+{
+    std::ifstream file(source);
+    json deserialized_file = json::parse(file);
+
+    m_documents = deserialized_file.at("documents").get<std::list<std::string>>();
+    for (const auto& [key, value] : deserialized_file.at("index").items())
+    {
+        m_index[key] = Term::fromJson(value);
+    }
+
+    return *this;
+}
+
 void InvertedIndex::extract_text(GumboNode* node, std::string& output)
 {  
     if (node->type == GUMBO_NODE_ELEMENT) 
@@ -280,115 +317,23 @@ std::vector<std::string> InvertedIndex::splitString(const std::string& line) noe
     return words;
 }
 
-// void InvertedIndex::serialize(const std::string& destination)
-// {
-//     std::ofstream out(destination, std::ios::binary);
-    
-//     // Сериализация list m_documents
-//     size_t doc_count = m_documents.size();
-//     out.write(reinterpret_cast<const char*>(&doc_count), sizeof(doc_count));
-    
-//     for (const auto& docs : m_documents) 
-//     {
-//         size_t length = docs.size();
-//         out.write(reinterpret_cast<const char*>(&length), sizeof(length));
-//         out.write(docs.c_str(), length);
-//     }
-    
-//     // Сериализация hash_map m_index
-//     size_t index_size = m_index.size();
-//     out.write(reinterpret_cast<const char*>(&index_size), sizeof(index_size));
-    
-//     for (const auto& [key, value] : m_index) 
-//     {
-//         size_t key_length = key.size();
-//         out.write(reinterpret_cast<const char*>(&key_length), sizeof(key_length));
-//         out.write(key.c_str(), key_length);
-        
-//         size_t value_size = value.size();
-//         out.write(reinterpret_cast<const char*>(&value_size), sizeof(value_size));
-        
-//         for (const auto& val : value) 
-//         {
-//             out.write(reinterpret_cast<const char*>(&val), sizeof(val));
-//         }
-//     }
-    
-//     out.close();
-// }
 
-// InvertedIndex& InvertedIndex::deserialize(const std::string& source)
-// {
-//     std::ifstream in(source, std::ios::binary);
-//     if (!in) 
-//     {
-//         std::cerr << "Failed to open file: " << source << std::endl;
-//         return *this; 
-//     }
+InvertedIndex& InvertedIndex::readFromDisk(const std::string& file_name)
+{
+    static InvertedIndex invertedIndex{};
 
-//     // десериализация list documents
-//     size_t doc_count;
-//     in.read(reinterpret_cast<char*>(&doc_count), sizeof(doc_count));
+    std::ifstream construct_file;
+    construct_file.open(file_name);
+
+    char c;
+    if (!construct_file.is_open()) 
+        return invertedIndex;
     
-//     m_documents.clear();
-//     for (size_t i = 0; i < doc_count; ++i) 
-//     {
-//         size_t length;
-//         in.read(reinterpret_cast<char*>(&length), sizeof(length));
-        
-//         std::string doc(length, '0'); 
-//         in.read(&doc[0], length);
-//         m_documents.push_back(doc);
-//     }
-
-//     // десериализация hash_map index
-//     size_t index_size;
-//     in.read(reinterpret_cast<char*>(&index_size), sizeof(index_size));
+    else if (!(construct_file >> c))
+        return invertedIndex;
     
-//     m_index.clear();
-//     for (size_t i = 0; i < index_size; ++i) 
-//     {
-//         size_t key_length;
-//         in.read(reinterpret_cast<char*>(&key_length), sizeof(key_length));
-        
-//         std::string key(key_length, '0');
-//         in.read(&key[0], key_length);
-        
-//         size_t value_size;
-//         in.read(reinterpret_cast<char*>(&value_size), sizeof(value_size));
-
-//         std::list<int> values;
-//         for (size_t j = 0; j < value_size; ++j) 
-//         {
-//             int val;
-//             in.read(reinterpret_cast<char*>(&val), sizeof(val));
-//             values.push_back(val);
-//         }
-        
-//         m_index[key] = values; 
-//     }
-
-//     in.close();
-
-//     return *this; 
-// }
-
-// InvertedIndex& InvertedIndex::readFromDisk(const std::string& file_name)
-// {
-//     static InvertedIndex invertedIndex{};
-
-//     std::ifstream construct_file;
-//     construct_file.open(file_name);
-
-//     char c;
-//     if (!construct_file.is_open()) 
-//         return invertedIndex;
-    
-//     else if (!(construct_file >> c))
-//         return invertedIndex;
-    
-//     return invertedIndex.deserialize(file_name);
-// }
+    return invertedIndex.deserialize(file_name);
+}
 
 MimeType InvertedIndex::get_mime_type_of_document(const std::string& file_name) const noexcept
 {
